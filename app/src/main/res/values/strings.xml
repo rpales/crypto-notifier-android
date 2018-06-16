@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">CryptoCoin Notifier</string>
+    <string name="SHARED_PREFERENCES">AppPreferences</string>
+
+</resources>
