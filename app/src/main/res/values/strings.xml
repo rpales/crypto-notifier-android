@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">CryptoCoin Notifier</string>
     <string name="SHARED_PREFERENCES">AppPreferences</string>
-
+    <string name="API_BASE_URL">http://206.189.19.242/</string>
 </resources>

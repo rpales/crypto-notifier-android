@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadPreferences() {
-        val prefs = getSharedPreferences(R.string.SHARED_PREFERENCES.toString(), Context.MODE_PRIVATE)
+        val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
 
         userEmail = prefs.getString("userEmail", null)
         authToken = prefs.getString("authToken", null)
