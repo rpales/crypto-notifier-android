@@ -14,9 +14,12 @@ import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import com.google.gson.Gson
+
+
 
 class LoginActivity : AppCompatActivity() {
-
+    val gson : Gson = Gson()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val apiClient : ApiClient = RetrofitClient.getClient(getString(R.string.API_BASE_URL))!!.create(ApiClient::class.java)
@@ -27,12 +30,12 @@ class LoginActivity : AppCompatActivity() {
 
         loadPreferences()
 
-        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-
         var submitButton = findViewById(R.id.submit_button) as Button
         var emailField = findViewById(R.id.email_field) as TextView
         var passwordField = findViewById(R.id.password_field) as TextView
         var actionSwitcher = findViewById(R.id.action_switcher) as TextView
+
+        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
 
         // remove authToken key (session)
         prefsEditor.remove("authToken")
@@ -51,13 +54,6 @@ class LoginActivity : AppCompatActivity() {
         }
 
         submitButton.setOnClickListener {
-            prefsEditor.putString("userEmail", emailField.text.toString())
-            prefsEditor.apply()
-
-
-            prefsEditor.putString("authToken", passwordField.text.toString())
-            prefsEditor.apply()
-
 
             val loginRequest = LoginRequest(emailField.text.toString(),
                                             passwordField.text.toString(),
@@ -68,6 +64,14 @@ class LoginActivity : AppCompatActivity() {
                 createSession(loginRequest, apiClient)
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+        // remove authToken key (session)
+        prefsEditor.remove("authToken")
+        prefsEditor.apply()
     }
 
     // close app on back button
@@ -81,8 +85,9 @@ class LoginActivity : AppCompatActivity() {
     private fun loadPreferences() {
         val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
 
-        var emailField = findViewById(R.id.email_field) as TextView
-        emailField.setText(prefs.getString("userEmail", ""))
+        val emailField = findViewById(R.id.email_field) as TextView
+
+        emailField.setText(prefs.getString("lastEmail", "") ?: "")
     }
 
     private fun createSession(loginRequest: LoginRequest, apiClient: ApiClient) {
@@ -90,8 +95,7 @@ class LoginActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(this@LoginActivity, response.body().toString(), Toast.LENGTH_SHORT).show()
-                    finish()
+                    successCallback(response)
                 } else {
                     Toast.makeText(this@LoginActivity, "invalid email or password", Toast.LENGTH_SHORT).show()
                 }
@@ -108,10 +112,10 @@ class LoginActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(this@LoginActivity, response.body().toString(), Toast.LENGTH_SHORT).show()
-                    finish()
+                    successCallback(response)
                 } else {
-                    Toast.makeText(this@LoginActivity, "email already taken", Toast.LENGTH_SHORT).show()
+                    var str = response.errorBody()!!.string()
+                    Toast.makeText(this@LoginActivity, str, Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -119,6 +123,16 @@ class LoginActivity : AppCompatActivity() {
                 Toast.makeText(this@LoginActivity, "unknown error", Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    private fun successCallback(response: Response<User>) {
+        var user : User? = response.body()
+        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+        prefsEditor.putString("authToken", user?.authenticationToken ?: "")
+        prefsEditor.putString("lastEmail", user?.email ?: "")
+        prefsEditor.putString("currentUser", user?.toJson(gson) ?: "")
+        prefsEditor.apply()
+        finish()
     }
 
 }
