@@ -12,6 +12,6 @@ data class Alert(
         @SerializedName("last_notification_at") val lastNotificationAt: Date?,
         @SerializedName("created_at") val createdAt: Date?,
         @SerializedName("updated_at") val updatedAt: Date?,
-        @SerializedName("user_id") val userId: Integer?//,
-//        @SerializedName("conditions") val conditions: Array<CryptoCondition>?
+        @SerializedName("user_id") val userId: Integer?,
+        @SerializedName("conditions") val conditions: Array<CryptoCondition>?
 ) : Serializable
