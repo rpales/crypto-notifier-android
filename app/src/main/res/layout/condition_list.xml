@@ -8,33 +8,18 @@
     android:weightSum="10">
 
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="9"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/alertName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="5dp"
-            android:text="Title"
-            android:textColor="@color/colorPrimary"
-            android:textSize="18sp" />
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/alertDescription"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="5dp"
+            android:textSize="18sp"
+            android:layout_weight="8"
             android:text="Text for Content" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
         <Switch
             android:id="@+id/alertSwitch"
             android:layout_width="wrap_content"

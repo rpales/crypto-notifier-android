@@ -39,6 +39,11 @@ class MainActivity : AppCompatActivity() {
             goToLogin()
         }
 
+        var addAlertButton = findViewById(R.id.main_add_alert_button) as android.support.design.widget.FloatingActionButton
+        addAlertButton.setOnClickListener {
+            goToAddAlert()
+        }
+
     }
 
     private class AlertsListAdapter(context: Context, alertsArray: Array<Alert>?): BaseAdapter() {
@@ -82,7 +87,7 @@ class MainActivity : AppCompatActivity() {
 
             vh.alertName.text = alertsArray?.get(position)?.name ?: "Alert"
             vh.alertDescription.text = "alert id is "+ alertsArray?.get(position)?.id.toString()
-            vh.alertCheckbox.isChecked = alertsArray?.get(position)?.active ?: false
+            vh.alertSwitch.isChecked = alertsArray?.get(position)?.active ?: false
 
             return view
         }
@@ -91,12 +96,12 @@ class MainActivity : AppCompatActivity() {
     private class ViewHolder(view: View?) {
         val alertName: TextView
         val alertDescription: TextView
-        val alertCheckbox: CheckBox
+        val alertSwitch: Switch
 
         init {
             this.alertName = view?.findViewById(R.id.alertName) as TextView
-            this.alertDescription= view?.findViewById(R.id.alertDescription) as TextView
-            this.alertCheckbox = view?.findViewById(R.id.alertCheckbox) as CheckBox
+            this.alertDescription= view.findViewById(R.id.alertDescription) as TextView
+            this.alertSwitch= view.findViewById(R.id.alertSwitch) as Switch
         }
 
     }
@@ -119,11 +124,16 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
         authToken = prefs.getString("authToken", null)
         val currentUserJSON = prefs.getString("currentUser", "")
-        currentUser = gson.fromJson<User>(currentUserJSON, User::class.java!!)
+        currentUser = gson.fromJson<User>(currentUserJSON, User::class.java)
     }
 
     private fun goToLogin() {
         val intent = Intent(this, LoginActivity::class.java)
+        startActivity(intent)
+    }
+
+    private fun goToAddAlert() {
+        val intent = Intent(this, AddAlertActivity::class.java)
         startActivity(intent)
     }
 }
