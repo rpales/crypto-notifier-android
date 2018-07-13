@@ -19,10 +19,11 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
-    var currentUser : User? = null
-    var userAlerts : List<Alert>? = null
-    var authToken : String? = null
-    val gson : Gson = Gson()
+    var currentUser : User?        = null
+    var userAlerts  : List<Alert>? = null
+    var authToken   : String?      = null
+    val gson        : Gson         = Gson()
+    val apiClient   : ApiClient    = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        var logoutButton = findViewById(R.id.main_logout_button) as Button
+        val logoutButton = findViewById(R.id.main_logout_button) as Button
         logoutButton.setOnClickListener {
             val editor = getSharedPreferences(R.string.SHARED_PREFERENCES.toString(), Context.MODE_PRIVATE).edit()
 
@@ -46,11 +47,60 @@ class MainActivity : AppCompatActivity() {
             goToLogin()
         }
 
-        var addAlertButton = findViewById(R.id.main_add_alert_button) as android.support.design.widget.FloatingActionButton
+        val addAlertButton = findViewById(R.id.main_add_alert_button) as android.support.design.widget.FloatingActionButton
         addAlertButton.setOnClickListener {
             goToAddAlert()
         }
 
+    }
+
+    override fun onStart() {
+        super.onStart()
+        loadPreferences()
+        if (authToken == null || authToken == "") {
+            goToLogin()
+        }
+
+        if (userAlerts == null) { userAlerts = currentUser?.alerts }
+
+        populateAlertsList(false)
+    }
+
+    private fun loadPreferences() {
+        val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
+        authToken = prefs.getString("authToken", null)
+        val currentUserJSON = prefs.getString("currentUser", "")
+        currentUser = gson.fromJson<User>(currentUserJSON, User::class.java)
+        val userAlertsJSON = prefs.getString("userAlerts", "")
+        if (userAlertsJSON != "") {
+            val listType = object : TypeToken<List<Alert>>() { }.type
+            userAlerts = gson.fromJson<List<Alert>>(userAlertsJSON, listType)
+        }
+    }
+
+    // -------------- Populate alerts list view --------------
+
+    private fun populateAlertsList(apiFetch: Boolean) {
+        if (apiFetch) {
+            apiClient.getAlerts(authToken).enqueue(object : Callback<List<Alert>> {
+
+                override fun onResponse(call: Call<List<Alert>>, response: Response<List<Alert>>) {
+                    if (response.isSuccessful()) {
+                        userAlerts = response.body()
+                    } else {
+                        Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onFailure(call: Call<List<Alert>>, t: Throwable) {
+                    Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
+
+        val listView = findViewById<ListView>(R.id.main_alerts_list)
+
+        listView.adapter = AlertsListAdapter(this, userAlerts)
     }
 
     private class AlertsListAdapter(context: Context, alertsArray: List<Alert>?): BaseAdapter() {
@@ -63,20 +113,11 @@ class MainActivity : AppCompatActivity() {
             this.alertsArray = alertsArray
         }
 
-        // responsible for how many rows in my list
-        override fun getCount(): Int {
-            return alertsArray?.size ?: 0
-        }
+        override fun getCount(): Int { return alertsArray?.size ?: 0 }
 
-        //ignore
-        override fun getItemId(position: Int): Long {
-            return position.toLong()
-        }
+        override fun getItemId(position: Int): Long { return position.toLong() }
 
-        // ignore
-        override fun getItem(position: Int): Any {
-            return "something"
-        }
+        override fun getItem(position: Int): Any? { return alertsArray?.get(position) }
 
         override fun getView(position: Int, convertView: View?, viewGroup: ViewGroup?): View {
 
@@ -95,6 +136,9 @@ class MainActivity : AppCompatActivity() {
             vh.alertName.text = alertsArray?.get(position)?.name ?: "Alert"
             vh.alertDescription.text = "alert id is "+ alertsArray?.get(position)?.id.toString()
             vh.alertSwitch.isChecked = alertsArray?.get(position)?.active ?: false
+            vh.deleteButton.setOnClickListener {
+//                it.
+            }
 
             return view
         }
@@ -104,41 +148,18 @@ class MainActivity : AppCompatActivity() {
         val alertName: TextView
         val alertDescription: TextView
         val alertSwitch: Switch
+        val deleteButton: ImageButton
 
         init {
             this.alertName = view?.findViewById(R.id.alertName) as TextView
             this.alertDescription= view.findViewById(R.id.alertDescription) as TextView
             this.alertSwitch= view.findViewById(R.id.alertSwitch) as Switch
+            this.deleteButton= view.findViewById(R.id.alertDelete_button) as ImageButton
         }
 
     }
 
-
-    override fun onStart() {
-        super.onStart()
-        loadPreferences()
-        if (authToken == null || authToken == "") {
-            goToLogin()
-        }
-
-        if (userAlerts == null) { userAlerts = currentUser?.alerts }
-
-        val listView = findViewById<ListView>(R.id.main_alerts_list)
-
-        listView.adapter = AlertsListAdapter(this, userAlerts)
-    }
-
-    private fun loadPreferences() {
-        val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
-        authToken = prefs.getString("authToken", null)
-        val currentUserJSON = prefs.getString("currentUser", "")
-        currentUser = gson.fromJson<User>(currentUserJSON, User::class.java)
-        val userAlertsJSON = prefs.getString("userAlerts", "")
-        if (userAlertsJSON != "") {
-            val listType = object : TypeToken<List<Alert>>() { }.type
-            userAlerts = gson.fromJson<List<Alert>>(userAlertsJSON, listType)
-        }
-    }
+    // -------------- go to activities --------------
 
     private fun goToLogin() {
         val intent = Intent(this, LoginActivity::class.java)
