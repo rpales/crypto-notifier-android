@@ -13,7 +13,7 @@
         android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/alertDescription"
+            android:id="@+id/conditionDescription"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="5dp"
@@ -21,10 +21,15 @@
             android:layout_weight="8"
             android:text="Text for Content" />
         <Switch
-            android:id="@+id/alertSwitch"
+            android:id="@+id/conditionSwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"/>
     </LinearLayout>
 
+    <!--<Button-->
+        <!--android:id="@+id/add_alert_add_condition_button"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="wrap_content"-->
+        <!--android:text="+" />-->
 </LinearLayout>

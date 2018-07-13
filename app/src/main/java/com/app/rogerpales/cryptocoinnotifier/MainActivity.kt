@@ -10,10 +10,17 @@ import android.view.ViewGroup
 import android.widget.*
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
+import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
+import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
     var currentUser : User? = null
+    var userAlerts : List<Alert>? = null
     var authToken : String? = null
     val gson : Gson = Gson()
 
@@ -46,10 +53,10 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private class AlertsListAdapter(context: Context, alertsArray: Array<Alert>?): BaseAdapter() {
+    private class AlertsListAdapter(context: Context, alertsArray: List<Alert>?): BaseAdapter() {
 
         private val context : Context
-        private val alertsArray : Array<Alert>?
+        private val alertsArray : List<Alert>?
 
         init {
             this.context = context
@@ -114,10 +121,11 @@ class MainActivity : AppCompatActivity() {
             goToLogin()
         }
 
+        if (userAlerts == null) { userAlerts = currentUser?.alerts }
+
         val listView = findViewById<ListView>(R.id.main_alerts_list)
 
-        listView.adapter = AlertsListAdapter(this, currentUser?.alerts)
-
+        listView.adapter = AlertsListAdapter(this, userAlerts)
     }
 
     private fun loadPreferences() {
@@ -125,6 +133,11 @@ class MainActivity : AppCompatActivity() {
         authToken = prefs.getString("authToken", null)
         val currentUserJSON = prefs.getString("currentUser", "")
         currentUser = gson.fromJson<User>(currentUserJSON, User::class.java)
+        val userAlertsJSON = prefs.getString("userAlerts", "")
+        if (userAlertsJSON != "") {
+            val listType = object : TypeToken<List<Alert>>() { }.type
+            userAlerts = gson.fromJson<List<Alert>>(userAlertsJSON, listType)
+        }
     }
 
     private fun goToLogin() {

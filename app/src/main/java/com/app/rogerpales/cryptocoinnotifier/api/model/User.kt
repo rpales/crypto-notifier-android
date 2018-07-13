@@ -13,7 +13,7 @@ data class User(
         @SerializedName("country_code") val countryCode: String?,
         @SerializedName("archived") val archived: Boolean?,
         @SerializedName("confirmed_email") val confirmedEmail: Boolean?,
-        @SerializedName("alerts") val alerts: Array<Alert>?
+        @SerializedName("alerts") val alerts: List<Alert>?
 ) : Serializable {
     fun toJson(gson: Gson): String? {
         return gson.toJson(this)
