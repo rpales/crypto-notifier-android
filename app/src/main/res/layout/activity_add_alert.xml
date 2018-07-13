@@ -23,7 +23,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="9"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:focusable="true"
+        android:focusableInTouchMode="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -52,10 +54,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
-            android:hint="Alert name"
+            android:hint="label"
             android:inputType="textPersonName"
             android:padding="8dp"
-            android:textSize="14dp" />
+            android:textSize="14dp"/>
 
         <Switch
             android:id="@+id/alert_active"

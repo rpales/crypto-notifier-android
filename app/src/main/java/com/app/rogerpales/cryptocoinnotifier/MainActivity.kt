@@ -232,6 +232,9 @@ class MainActivity : AppCompatActivity() {
                 override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                     if (response.isSuccessful()) {
                         alert = response.body()
+                        prefsEditor.putString("currentAlert", alert?.toJson(gson) ?: "")
+                        prefsEditor.apply()
+                        startActivity(intent)
                     } else {
                         Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
                     }
@@ -241,9 +244,10 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
                 }
             })
+        } else {
+            prefsEditor.putString("currentAlert", alert?.toJson(gson) ?: "")
+            prefsEditor.apply()
+            startActivity(intent)
         }
-        prefsEditor.putString("currentAlert", alert?.toJson(gson) ?: "")
-        prefsEditor.apply()
-        startActivity(intent)
     }
 }

@@ -3,19 +3,15 @@ package com.app.rogerpales.cryptocoinnotifier
 import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition
-import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.google.gson.Gson
-import org.json.JSONArray
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -25,14 +21,25 @@ class AddAlertActivity : AppCompatActivity() {
     var authToken : String? = null
     var currentAlert : Alert? = null
     val gson : Gson = Gson()
+    val apiClient : ApiClient = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_alert)
 
-        var doneButton = findViewById(R.id.add_alert_done_button) as android.support.design.widget.FloatingActionButton
+        val doneButton = findViewById(R.id.add_alert_done_button) as android.support.design.widget.FloatingActionButton
         doneButton.setOnClickListener {
-            goToMain()
+            updateCurrentAlert(true)
+        }
+        val alertName = findViewById(R.id.alert_name) as EditText
+        alertName.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                updateCurrentAlert(false)
+            }
+        }
+        val alertSwitch = findViewById(R.id.alert_active) as Switch
+        alertSwitch.setOnClickListener {
+            updateCurrentAlert(false)
         }
     }
 
@@ -126,6 +133,10 @@ class AddAlertActivity : AppCompatActivity() {
         listView.adapter = ConditionsListAdapter(this, currentAlert?.conditions, addButton)
     }
 
+    override fun onBackPressed() {
+        updateCurrentAlert(true)
+    }
+
     private fun loadPreferences() {
         val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
         authToken = prefs.getString("authToken", null)
@@ -138,8 +149,6 @@ class AddAlertActivity : AppCompatActivity() {
     }
 
     private fun goToMain() {
-        val apiClient : ApiClient = RetrofitClient.getClient(getString(R.string.API_BASE_URL))!!.create(ApiClient::class.java)
-
         apiClient.getAlertsRaw(authToken).enqueue(object : Callback<String> {
 
             override fun onResponse(call: Call<String>, response: Response<String>) {
@@ -159,5 +168,30 @@ class AddAlertActivity : AppCompatActivity() {
                 finish()
             }
         })
+    }
+
+    private fun updateCurrentAlert(goToMain: Boolean) {
+        if (currentAlert != null) {
+            val alertName   = findViewById(R.id.alert_name) as EditText
+            currentAlert?.name = alertName.text.toString()
+            val alertSwitch = findViewById(R.id.alert_active) as Switch
+            currentAlert?.active = alertSwitch.isChecked
+            apiClient.updateAlert(authToken, currentAlert?.id?.toInt(), currentAlert).enqueue(object : Callback<Alert> {
+
+                override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
+                    if (!response.isSuccessful()) {
+                        Toast.makeText(this@AddAlertActivity, "network error", Toast.LENGTH_SHORT).show()
+                    }
+                    if (goToMain) { goToMain() }
+                }
+
+                override fun onFailure(call: Call<Alert>, t: Throwable) {
+                    Toast.makeText(this@AddAlertActivity, "network error", Toast.LENGTH_SHORT).show()
+                    if (goToMain) { goToMain() }
+                }
+            })
+        } else {
+            Toast.makeText(this@AddAlertActivity, "no current alert?", Toast.LENGTH_SHORT).show()
+        }
     }
 }
