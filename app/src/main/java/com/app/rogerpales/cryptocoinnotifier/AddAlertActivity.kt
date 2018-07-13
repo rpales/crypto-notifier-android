@@ -3,6 +3,7 @@ package com.app.rogerpales.cryptocoinnotifier
 import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +14,8 @@ import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.google.gson.Gson
+import org.json.JSONArray
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -29,7 +32,7 @@ class AddAlertActivity : AppCompatActivity() {
 
         var doneButton = findViewById(R.id.add_alert_done_button) as android.support.design.widget.FloatingActionButton
         doneButton.setOnClickListener {
-            finish()
+            goToMain()
         }
     }
 
@@ -96,9 +99,18 @@ class AddAlertActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+
         loadPreferences()
+
         if (authToken == null || authToken == "") {
             goToMain()
+        }
+
+        if (intent.getBooleanExtra("NEW_ALERT", false)) {
+            val activityTitle = findViewById(R.id.add_alert_title) as TextView
+            val alertName = findViewById(R.id.alert_name) as EditText
+            activityTitle.setText("Edit Alert")
+            alertName.setText(currentAlert?.name ?: "")
         }
 
         val listView = findViewById<ListView>(R.id.alert_conditions_list)
@@ -122,21 +134,24 @@ class AddAlertActivity : AppCompatActivity() {
     private fun goToMain() {
         val apiClient : ApiClient = RetrofitClient.getClient(getString(R.string.API_BASE_URL))!!.create(ApiClient::class.java)
 
-        apiClient.getAlerts(authToken).enqueue(object : Callback<List<Alert>> {
+        apiClient.getAlertsRaw(authToken).enqueue(object : Callback<String> {
 
-            override fun onResponse(call: Call<List<Alert>>, response: Response<List<Alert>>) {
+            override fun onResponse(call: Call<String>, response: Response<String>) {
                 if (response.isSuccessful()) {
                     val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
                     prefsEditor.putString("userAlerts", response.body().toString())
+                    prefsEditor.apply()
+                    finish()
                 } else {
                     Toast.makeText(this@AddAlertActivity, "network error", Toast.LENGTH_SHORT).show()
+                    finish()
                 }
             }
 
-            override fun onFailure(call: Call<List<Alert>>, t: Throwable) {
+            override fun onFailure(call: Call<String>, t: Throwable) {
                 Toast.makeText(this@AddAlertActivity, "network error", Toast.LENGTH_SHORT).show()
+                finish()
             }
         })
-        finish()
     }
 }

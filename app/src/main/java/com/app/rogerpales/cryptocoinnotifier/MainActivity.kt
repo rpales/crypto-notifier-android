@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -37,11 +38,16 @@ class MainActivity : AppCompatActivity() {
 
         val logoutButton = findViewById(R.id.main_logout_button) as Button
         logoutButton.setOnClickListener {
-            val editor = getSharedPreferences(R.string.SHARED_PREFERENCES.toString(), Context.MODE_PRIVATE).edit()
+            currentUser = null
+            userAlerts  = null
+            authToken = null
+            val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
 
             editor.remove("authToken")
             editor.remove("email")
             editor.remove("currentUser")
+            editor.remove("userAlerts")
+            editor.remove("currentAlert")
             editor.apply()
 
             goToLogin()
@@ -49,13 +55,21 @@ class MainActivity : AppCompatActivity() {
 
         val addAlertButton = findViewById(R.id.main_add_alert_button) as android.support.design.widget.FloatingActionButton
         addAlertButton.setOnClickListener {
-            goToAddAlert()
+            goToAddAlert(true, null)
         }
 
     }
 
     override fun onStart() {
         super.onStart()
+        Log.d("currentUser", currentUser.toString())
+        Log.d("userAlerts", userAlerts.toString())
+        Log.d("authToken", authToken.toString())
+        val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
+        Log.d("pref authToken", prefs.getString("authToken", ""))
+        Log.d("pref currentUser", prefs.getString("currentUser", ""))
+        Log.d("pref userAlerts", prefs.getString("userAlerts", ""))
+
         loadPreferences()
         if (authToken == null || authToken == "") {
             goToLogin()
@@ -73,8 +87,15 @@ class MainActivity : AppCompatActivity() {
         currentUser = gson.fromJson<User>(currentUserJSON, User::class.java)
         val userAlertsJSON = prefs.getString("userAlerts", "")
         if (userAlertsJSON != "") {
-            val listType = object : TypeToken<List<Alert>>() { }.type
-            userAlerts = gson.fromJson<List<Alert>>(userAlertsJSON, listType)
+            try {
+                val listType = object : TypeToken<List<Alert>>() { }.type
+                userAlerts = Gson().fromJson<List<Alert>>(userAlertsJSON, listType)
+            } catch (t: Throwable) {
+                Log.e("Deserialize userAlerts", "raw JSON: $userAlertsJSON")
+            }
+        } else {
+            Toast.makeText(this@MainActivity, "is not reading user alerts", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@MainActivity, userAlertsJSON, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -117,7 +138,7 @@ class MainActivity : AppCompatActivity() {
 
         override fun getItemId(position: Int): Long { return position.toLong() }
 
-        override fun getItem(position: Int): Any? { return alertsArray?.get(position) }
+        override fun getItem(position: Int): Any { return "alertsArray?.get(position)" }
 
         override fun getView(position: Int, convertView: View?, viewGroup: ViewGroup?): View {
 
@@ -132,12 +153,20 @@ class MainActivity : AppCompatActivity() {
                 view = convertView
                 vh = view.tag as ViewHolder
             }
+            val alert = alertsArray?.get(position)
+            vh.alertName.text = alert?.name ?: "Alert"
+            vh.alertName.setOnClickListener {
 
-            vh.alertName.text = alertsArray?.get(position)?.name ?: "Alert"
-            vh.alertDescription.text = "alert id is "+ alertsArray?.get(position)?.id.toString()
-            vh.alertSwitch.isChecked = alertsArray?.get(position)?.active ?: false
+
+                Toast.makeText(context, "go to edit alert with id: "+ alert?.id.toString(), Toast.LENGTH_SHORT).show()
+            }
+            vh.alertDescription.text = "alert id is "+ alert?.id.toString()
+            vh.alertSwitch.isChecked = alert?.active ?: false
+            vh.alertSwitch.setOnClickListener {
+                Toast.makeText(context, "update alert with id: "+ alert?.id.toString() + "active to " + vh.alertSwitch.isChecked.toString(), Toast.LENGTH_SHORT).show()
+            }
             vh.deleteButton.setOnClickListener {
-//                it.
+                Toast.makeText(context, "delete alert with id: "+ alert?.id.toString(), Toast.LENGTH_SHORT).show()
             }
 
             return view
@@ -166,8 +195,31 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    private fun goToAddAlert() {
+    private fun goToAddAlert(newAlert: Boolean = false, alert: Alert?) {
+        var alert : Alert? = alert
+        if (newAlert) {
+            apiClient.createAlert(authToken).enqueue(object : Callback<Alert> {
+
+                override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
+                    if (response.isSuccessful()) {
+                        alert = response.body()
+                    } else {
+                        Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onFailure(call: Call<Alert>, t: Throwable) {
+                    Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
+                }
+            })
+        }
+
+        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+        prefsEditor.putString("currentAlert", alert?.toJson(gson) ?: "")
+        prefsEditor.apply()
+
         val intent = Intent(this, AddAlertActivity::class.java)
+        intent.putExtra("NEW_ALERT", newAlert)
         startActivity(intent)
     }
 }

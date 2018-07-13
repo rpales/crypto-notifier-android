@@ -1,5 +1,6 @@
 package com.app.rogerpales.cryptocoinnotifier.api.model
 
+import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
 import java.util.*
@@ -14,4 +15,8 @@ data class Alert(
         @SerializedName("updated_at") val updatedAt: Date?,
         @SerializedName("user_id") val userId: Integer?,
         @SerializedName("conditions") val conditions: Array<CryptoCondition>?
-) : Serializable
+) : Serializable {
+    fun toJson(gson: Gson): String? {
+        return gson.toJson(this)
+    }
+}

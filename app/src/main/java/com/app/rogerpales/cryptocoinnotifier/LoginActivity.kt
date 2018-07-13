@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.content.Intent
 import android.widget.Toast
+import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.LoginRequest

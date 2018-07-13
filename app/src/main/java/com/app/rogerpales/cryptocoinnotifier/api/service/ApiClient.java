@@ -4,6 +4,8 @@ package com.app.rogerpales.cryptocoinnotifier.api.service;
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert;
 import com.app.rogerpales.cryptocoinnotifier.api.model.User;
 
+import org.json.JSONArray;
+
 import java.util.List;
 
 import retrofit2.Call;
@@ -31,8 +33,11 @@ public interface ApiClient {
     @GET("alerts")
     Call<List<Alert>> getAlerts(@Header("X-Api-Key") String authToken);
 
+    @GET("alerts")
+    Call<String> getAlertsRaw(@Header("X-Api-Key") String authToken);
+
     @POST("alerts")
-    Call<Alert> createAlert(@Header("X-Api-Key") String authToken, @Body Alert alert);
+    Call<Alert> createAlert(@Header("X-Api-Key") String authToken);
 
     @PUT("alerts/{alertId}")
     Call<Alert> updateAlert(@Header("X-Api-Key") String authToken, @Path("alertId") Integer alertId, @Body Alert alert);
