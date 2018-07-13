@@ -5,15 +5,15 @@ import com.google.gson.annotations.SerializedName
 import java.io.Serializable
 
 data class User(
-        @SerializedName("id") val id: Integer?,
-        @SerializedName("name") val name: String?,
-        @SerializedName("email") val email: String?,
-        @SerializedName("device_id") val deviceId: String?,
-        @SerializedName("authentication_token") val authenticationToken: String?,
-        @SerializedName("country_code") val countryCode: String?,
-        @SerializedName("archived") val archived: Boolean?,
-        @SerializedName("confirmed_email") val confirmedEmail: Boolean?,
-        @SerializedName("alerts") val alerts: List<Alert>?
+        @SerializedName("id") var id: Integer?,
+        @SerializedName("name") var name: String?,
+        @SerializedName("email") var email: String?,
+        @SerializedName("device_id") var deviceId: String?,
+        @SerializedName("authentication_token") var authenticationToken: String?,
+        @SerializedName("country_code") var countryCode: String?,
+        @SerializedName("archived") var archived: Boolean?,
+        @SerializedName("confirmed_email") var confirmedEmail: Boolean?,
+        @SerializedName("alerts") var alerts: List<Alert>?
 ) : Serializable {
     fun toJson(gson: Gson): String? {
         return gson.toJson(this)

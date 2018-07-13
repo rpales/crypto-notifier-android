@@ -106,10 +106,12 @@ class AddAlertActivity : AppCompatActivity() {
             goToMain()
         }
 
+        val activityTitle = findViewById(R.id.add_alert_title) as TextView
         if (intent.getBooleanExtra("NEW_ALERT", false)) {
-            val activityTitle = findViewById(R.id.add_alert_title) as TextView
-            val alertName = findViewById(R.id.alert_name) as EditText
+            activityTitle.setText("New Alert")
+        } else {
             activityTitle.setText("Edit Alert")
+            val alertName = findViewById(R.id.alert_name) as EditText
             alertName.setText(currentAlert?.name ?: "")
         }
 
@@ -128,7 +130,11 @@ class AddAlertActivity : AppCompatActivity() {
         val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
         authToken = prefs.getString("authToken", null)
         val currentAlertJSON = prefs.getString("currentAlert", "")
-        currentAlert = gson.fromJson<Alert>(currentAlertJSON, User::class.java)
+        try {
+            currentAlert = gson.fromJson<Alert>(currentAlertJSON, Alert::class.java)
+        } catch (t: Throwable) {
+            goToMain()
+        }
     }
 
     private fun goToMain() {
