@@ -221,9 +221,7 @@ class AddAlertActivity : AppCompatActivity() {
         if (condition == null) {
             condition = CryptoCondition(alertId = currentAlert?.id!!)
         }
-        Log.d("condition", condition.toString())
         prefsEditor.putString("currentCondition", condition?.toJson(Gson()) ?: "")
-        Log.d("conditionJSON", condition?.toJson(Gson()))
         prefsEditor.apply()
         startActivity(intent)
     }

@@ -4,12 +4,17 @@ import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.*
+import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
+import com.app.rogerpales.cryptocoinnotifier.api.model.CoinsContainer
 import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
-import org.w3c.dom.Text
+import com.google.gson.Gson
+import retrofit2.Call
+import retrofit2.Response
 
 class AddCondition : AppCompatActivity() {
 
@@ -68,6 +73,10 @@ class AddCondition : AppCompatActivity() {
     var numReadingsInput : EditText? = null
     var unitsLabel : TextView? = null
 
+    var availablefromCoins : List<String>? = null
+    var availableToCoins   : List<String>? = null
+    var context : Context = this
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +95,22 @@ class AddCondition : AppCompatActivity() {
         periodSpinner = findViewById(R.id.add_conditioin_period) as Spinner
         numReadingsInput = findViewById(R.id.add_conditioin_readings_number) as EditText
         unitsLabel = findViewById(R.id.add_conditioin_unit_label) as TextView
+
+        toInput!!.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(p0: AdapterView<*>?) {}
+
+            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
+                changeToCoinCallback()
+            }
+        }
+        typeSpinner!!.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(p0: AdapterView<*>?) {}
+
+            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
+                changeTypeCallback()
+            }
+        }
+
     }
 
     override fun onStart() {
@@ -104,19 +129,28 @@ class AddCondition : AppCompatActivity() {
 
         val activityTitle = findViewById(R.id.add_condition_title) as TextView
         if (intent.getBooleanExtra("NEW_CONDITION", false)) {
-            activityTitle.setText("New Condition")
+            activityTitle.text = "New Condition"
         } else {
-            activityTitle.setText("Edit Condition")
+            activityTitle.text = "Edit Condition"
             fromInput!!.setText(currentCondition?.fromCoin ?: "BTC")
             toInput!!.setText(currentCondition?.toCoin ?: "USD")
             val conditionType = currentCondition?.conditionType ?: "PRICE_ABOVE"
             typeSpinner!!.setSelection(typeSpinnerAdapter.getPosition(typesToMap[conditionType]))
-            valueInput!!.setText((currentCondition?.value ?: 0).toString())
             val period = currentCondition?.periodTime ?: 0
             periodSpinner!!.setSelection(periodSpinnerAdapter.getPosition(periodsToMap[period]))
             numReadingsInput!!.setText((currentCondition?.readingsNumber ?: 0).toString())
         }
-        if (typeSpinner!!.selectedItem!!.contains(""))
+        if (typeSpinner!!.selectedItem!!.toString().contains("increment")) {
+            unitsLabel!!.text = "%"
+            var value = (currentCondition?.value ?: 0.0f) * 100
+            valueInput!!.setText(value.toString())
+        } else {
+            unitsLabel!!.text = toInput!!.text.toString()
+            valueInput!!.setText((currentCondition?.value ?: 0.0f).toString())
+        }
+
+        updateFromCoins()
+        updateToCoins()
     }
 
     private fun loadPreferences() {
@@ -128,35 +162,113 @@ class AddCondition : AppCompatActivity() {
 
     private fun saveAndFinish() {
         // call API with POST or PUT condition
-        finish()
+        currentCondition?.fromCoin = fromInput!!.text.toString()
+        currentCondition?.toCoin = toInput!!.text.toString()
+        currentCondition?.conditionType = typeSpinner!!.selectedItem.toString()
+        currentCondition?.value = valueInput!!.text.toString().toFloat()/100
+        val type = typeSpinner!!.selectedItem.toString()
+        currentCondition?.conditionType = typesFromMap[type]
+        val period = periodSpinner!!.selectedItem.toString()
+        currentCondition?.periodTime = periodsFromMap[period]
+        if (numReadingsInput!!.text.toString() != "") {
+            currentCondition?.readingsNumber = numReadingsInput!!.text.toString().toInt()
+        }
+        if (currentCondition?.id != null) {
+            apiClient.updateCondition(authToken, currentCondition?.alertId, currentCondition?.id, currentCondition).enqueue(object : retrofit2.Callback<CryptoCondition> {
+                override fun onResponse(call: Call<CryptoCondition>, response: Response<CryptoCondition>) {
+                    if (response.isSuccessful) {
+                        finish()
+                    } else {
+                        Toast.makeText(this@AddCondition, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                }
+
+                override fun onFailure(call: Call<CryptoCondition>, t: Throwable?) {
+                    Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            })
+        } else {
+            apiClient.createCondition(authToken, currentCondition?.alertId, currentCondition).enqueue(object : retrofit2.Callback<CryptoCondition> {
+                override fun onResponse(call: Call<CryptoCondition>, response: Response<CryptoCondition>) {
+                    if (response.isSuccessful) {
+                        finish()
+                    } else {
+                        Toast.makeText(this@AddCondition, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                }
+
+                override fun onFailure(call: Call<CryptoCondition>, t: Throwable?) {
+                    Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            })
+        }
+    }
+
+    private fun changeTypeCallback() {
+        val type = typeSpinner!!.selectedItem.toString()
+        numReadingsInput!!.isEnabled = type.contains("SMA")
+        periodSpinner!!.isEnabled = type.contains("SMA") || type.contains("increment")
+        if (type.contains("increment")) { unitsLabel!!.text = "%" }
+    }
+
+    private fun changeToCoinCallback() {
+        if (!typeSpinner!!.selectedItem.toString().contains("increment")) {
+            unitsLabel!!.text = toInput!!.text.toString()
+        }
+    }
+
+    fun updateFromCoins() {
+        fromInput!!.isEnabled = false
+        apiClient.getFromCoins(authToken).enqueue(object : retrofit2.Callback<CoinsContainer> {
+            override fun onResponse(call: Call<CoinsContainer>, response: Response<CoinsContainer>) {
+                if (response.isSuccessful) {
+                    availablefromCoins = response.body()?.coinsList
+                    val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+                    prefsEditor.putString("availablefromCoins", response.body()?.toJson(Gson()) ?: "")
+                    prefsEditor.apply()
+                    val fromInputAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, availablefromCoins)
+                    fromInputAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    fromInput!!.setAdapter(fromInputAdapter)
+                    fromInput!!.isEnabled = true
+                } else {
+                    Toast.makeText(this@AddCondition, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
+                    fromInput!!.isEnabled = true
+                }
+            }
+
+            override fun onFailure(call: Call<CoinsContainer>, t: Throwable?) {
+                Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
+                fromInput!!.isEnabled = true
+            }
+
+        })
+    }
+
+    fun updateToCoins() {
+        toInput!!.isEnabled = false
+        apiClient.getToCoins(authToken, fromInput!!.text.toString()).enqueue(object : retrofit2.Callback<CoinsContainer> {
+            override fun onResponse(call: Call<CoinsContainer>, response: Response<CoinsContainer>) {
+                if (response.isSuccessful) {
+                    availableToCoins = response.body()?.coinsList
+                    val toInputAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, availableToCoins)
+                    toInputAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    toInput!!.setAdapter(toInputAdapter)
+                    toInput!!.isEnabled = true
+                } else {
+                    toInput!!.isEnabled = true
+                    Toast.makeText(this@AddCondition, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<CoinsContainer>, t: Throwable?) {
+                toInput!!.isEnabled = true
+                Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
+            }
+
+        })
     }
 }
-
-
-//        if (createCondition) {
-//            apiClient.createCondition(authToken, currentAlert?.id).enqueue(object : Callback<CryptoCondition> {
-//
-//                override fun onResponse(call: Call<CryptoCondition>, response: Response<CryptoCondition>) {
-//                    if (response.isSuccessful()) {
-//                        condition = response.body()
-//                        prefsEditor.putString("currentAlert", condition?.toJson(Gson()) ?: "")
-//                        prefsEditor.apply()
-//                        startActivity(intent)
-//                    } else {
-//                        when (response.code()) {
-//                            401  -> goToLogin()
-//                            else -> showMessage(response.errorBody()?.string())
-//                        }
-//                    }
-//                }
-//
-//                override fun onFailure(call: Call<CryptoCondition>, t: Throwable) {
-//                    showMessage("network error")
-//                }
-//            })
-//        } else {
-//            prefsEditor.putString("currentCondition", condition?.toJson(Gson()) ?: "")
-//            prefsEditor.apply()
-//            startActivity(intent)
-//        }
-//
