@@ -64,6 +64,7 @@ class AddCondition : AppCompatActivity() {
 
     var authToken : String? = null
     var currentCondition : CryptoCondition? = null
+    var currentAlert : Alert? = null
     val apiClient : ApiClient = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
     var fromInput : AutoCompleteTextView? = null
     var toInput : AutoCompleteTextView? = null
@@ -157,7 +158,7 @@ class AddCondition : AppCompatActivity() {
         val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
         authToken = prefs.getString("authToken", null)
         currentCondition = AppUtils.deserializeCondition(prefs.getString("currentCondition", ""))
-        Log.d("currentCondition", currentCondition.toString())
+        currentAlert = AppUtils.deserializeAlert(prefs.getString("currentAlert", ""))
     }
 
     private fun saveAndFinish() {
@@ -165,7 +166,11 @@ class AddCondition : AppCompatActivity() {
         currentCondition?.fromCoin = fromInput!!.text.toString()
         currentCondition?.toCoin = toInput!!.text.toString()
         currentCondition?.conditionType = typeSpinner!!.selectedItem.toString()
-        currentCondition?.value = valueInput!!.text.toString().toFloat()/100
+        if (currentCondition?.conditionType.toString().contains("increment")) {
+            currentCondition?.value = valueInput!!.text.toString().toFloat()/100
+        } else {
+            currentCondition?.value = valueInput!!.text.toString().toFloat()
+        }
         val type = typeSpinner!!.selectedItem.toString()
         currentCondition?.conditionType = typesFromMap[type]
         val period = periodSpinner!!.selectedItem.toString()
@@ -177,35 +182,79 @@ class AddCondition : AppCompatActivity() {
             apiClient.updateCondition(authToken, currentCondition?.alertId, currentCondition?.id, currentCondition).enqueue(object : retrofit2.Callback<CryptoCondition> {
                 override fun onResponse(call: Call<CryptoCondition>, response: Response<CryptoCondition>) {
                     if (response.isSuccessful) {
-                        finish()
+                        getAlertAndFinish()
                     } else {
-                        Toast.makeText(this@AddCondition, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
-                        finish()
+                        when (response.code()) {
+                            401  -> {
+                                val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+                                editor.remove("authToken")
+                                editor.apply()
+                                finish()
+                            }
+                            else -> getAlertAndFinish()
+                        }
                     }
                 }
 
                 override fun onFailure(call: Call<CryptoCondition>, t: Throwable?) {
                     Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
-                    finish()
+                    getAlertAndFinish()
                 }
             })
         } else {
             apiClient.createCondition(authToken, currentCondition?.alertId, currentCondition).enqueue(object : retrofit2.Callback<CryptoCondition> {
                 override fun onResponse(call: Call<CryptoCondition>, response: Response<CryptoCondition>) {
                     if (response.isSuccessful) {
-                        finish()
+                        getAlertAndFinish()
                     } else {
-                        Toast.makeText(this@AddCondition, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
-                        finish()
+                        when (response.code()) {
+                            401  -> {
+                                val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+                                editor.remove("authToken")
+                                editor.apply()
+                                finish()
+                            }
+                            else -> getAlertAndFinish()
+                        }
                     }
                 }
 
                 override fun onFailure(call: Call<CryptoCondition>, t: Throwable?) {
                     Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
-                    finish()
+                    getAlertAndFinish()
                 }
             })
         }
+    }
+
+    private fun getAlertAndFinish() {
+        apiClient.getAlert(authToken, currentCondition?.alertId).enqueue(object : retrofit2.Callback<Alert> {
+            override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
+                if (response.isSuccessful) {
+                    val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+                    prefsEditor.putString("currentAlert", response.body()?.toJson(Gson()) ?: "")
+                    prefsEditor.apply()
+                    finish()
+                } else {
+                    when (response.code()) {
+                        401  -> {
+                            val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+                            editor.remove("authToken")
+                            editor.apply()
+                            finish()
+                        }
+                        else -> {
+                            Toast.makeText(this@AddCondition, response.errorBody()?.string(), Toast.LENGTH_SHORT).show()
+                            finish()
+                        }
+                    }
+                }
+            }
+            override fun onFailure(call: Call<Alert>, t: Throwable?) {
+                Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        })
     }
 
     private fun changeTypeCallback() {
@@ -235,7 +284,7 @@ class AddCondition : AppCompatActivity() {
                     fromInput!!.setAdapter(fromInputAdapter)
                     fromInput!!.isEnabled = true
                 } else {
-                    Toast.makeText(this@AddCondition, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AddCondition, response.errorBody()?.string(), Toast.LENGTH_SHORT).show()
                     fromInput!!.isEnabled = true
                 }
             }
@@ -260,7 +309,7 @@ class AddCondition : AppCompatActivity() {
                     toInput!!.isEnabled = true
                 } else {
                     toInput!!.isEnabled = true
-                    Toast.makeText(this@AddCondition, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@AddCondition, response.errorBody()?.string(), Toast.LENGTH_SHORT).show()
                 }
             }
 

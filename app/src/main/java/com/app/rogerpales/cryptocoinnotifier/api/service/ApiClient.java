@@ -39,6 +39,9 @@ public interface ApiClient {
     @POST("alerts")
     Call<Alert> createAlert(@Header("X-Api-Key") String authToken);
 
+    @GET("alerts/{alertId}")
+    Call<Alert> getAlert(@Header("X-Api-Key") String authToken, @Path("alertId") Integer alertId);
+
     @PUT("alerts/{alertId}")
     Call<Alert> updateAlert(@Header("X-Api-Key") String authToken, @Path("alertId") Integer alertId, @Body Alert alert);
 
@@ -68,6 +71,6 @@ public interface ApiClient {
     Call<CoinsContainer> getFromCoins(@Header("X-Api-Key") String authToken);
 
     @GET("to_coins")
-    Call<CoinsContainer> getToCoins(@Header("X-Api-Key") String authToken, @Query("fromCoin") String fromCoin);
+    Call<CoinsContainer> getToCoins(@Header("X-Api-Key") String authToken, @Query("from_coin") String fromCoin);
 }
 
