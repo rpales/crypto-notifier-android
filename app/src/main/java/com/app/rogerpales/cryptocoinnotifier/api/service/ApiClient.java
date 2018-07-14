@@ -2,6 +2,7 @@ package com.app.rogerpales.cryptocoinnotifier.api.service;
 
 
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert;
+import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition;
 import com.app.rogerpales.cryptocoinnotifier.api.model.User;
 
 import org.json.JSONArray;
@@ -46,5 +47,20 @@ public interface ApiClient {
     Call<Alert> deleteAlert(@Header("X-Api-Key") String authToken, @Path("alertId") Integer alertId);
 
     // conditions endpoints
+
+    @GET("alerts/{alertId}/conditions")
+    Call<List<CryptoCondition>> getConditions(@Header("X-Api-Key") String authToken, @Path("alertId") Integer alertId);
+
+    @GET("alerts/{alertId}/conditions")
+    Call<String> getConditionsRaw(@Header("X-Api-Key") String authToken, @Path("alertId") Integer alertId);
+
+    @POST("alerts/{alertId}/conditions")
+    Call<CryptoCondition> createCondition(@Header("X-Api-Key") String authToken, @Path("alertId") Integer alertId);
+
+    @PUT("alerts/{alertId}/conditions/{conditionId}")
+    Call<CryptoCondition> updateCondition(@Header("X-Api-Key") String authToken, @Path("alertId") Integer alertId, @Path("conditionId") Integer conditionId);
+
+    @DELETE("alerts/{alertId}/conditions/{conditionId}")
+    Call<CryptoCondition> deleteCondition(@Header("X-Api-Key") String authToken, @Path("alertId") Integer alertId, @Path("conditionId") Integer conditionId);
 }
 

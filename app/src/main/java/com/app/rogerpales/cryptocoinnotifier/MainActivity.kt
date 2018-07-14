@@ -40,6 +40,8 @@ class MainActivity : AppCompatActivity() {
 
 
         val logoutButton = findViewById(R.id.main_logout_button) as Button
+        var logoutText = "Logout"
+        if (currentUser?.email != null) { logoutButton.setText(logoutText + " " + currentUser?.email) }
         logoutButton.setOnClickListener {
             goToLogin()
         }
@@ -208,7 +210,6 @@ class MainActivity : AppCompatActivity() {
 
         val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
         editor.remove("authToken")
-        editor.remove("email")
         editor.remove("currentUser")
         editor.remove("userAlerts")
         editor.remove("currentAlert")

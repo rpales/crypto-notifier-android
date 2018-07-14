@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -90,13 +91,16 @@ class AddAlertActivity : AppCompatActivity() {
                 }
 
                 vh.conditionDescription.text = "condition id is "+ conditionsArray?.get(position)?.id.toString()
+                vh.conditionDescription.setOnClickListener {
+                    goToAddCondition(conditionsArray?.get(position))
+                }
 
                 return view
             }
         }
     }
 
-    private class ViewHolder(view: View?) {
+    inner class ViewHolder(view: View?) {
         val conditionDescription: TextView
 
         init {
@@ -132,8 +136,7 @@ class AddAlertActivity : AppCompatActivity() {
         val addButton = Button(this)
         addButton.setText("add condition")
         addButton.setOnClickListener {
-            goToAddCondition()
-//            Toast.makeText(this, "add condition tapped", Toast.LENGTH_SHORT).show()
+            goToAddCondition( null)
         }
 
         listView.adapter = ConditionsListAdapter(this, currentAlert?.conditions, addButton)
@@ -210,13 +213,23 @@ class AddAlertActivity : AppCompatActivity() {
         }
     }
 
-    private fun goToAddCondition() {
+    private fun goToAddCondition(conditionParameter: CryptoCondition?) {
+        var condition : CryptoCondition? = conditionParameter
+        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
         val intent = Intent(this, AddCondition::class.java)
+        intent.putExtra("NEW_CONDITION", condition == null)
+        if (condition == null) {
+            condition = CryptoCondition(alertId = currentAlert?.id!!)
+        }
+        Log.d("condition", condition.toString())
+        prefsEditor.putString("currentCondition", condition?.toJson(Gson()) ?: "")
+        Log.d("conditionJSON", condition?.toJson(Gson()))
+        prefsEditor.apply()
         startActivity(intent)
     }
 
     fun sizeOf(list: List<Deletable>?): Int {
-        var count : Int = 0
+        var count = 0
         if (list != null) {
             for (item: Deletable in list) {
                 if (!item.deleted) { count += 1 }
@@ -224,4 +237,10 @@ class AddAlertActivity : AppCompatActivity() {
         }
         return count
     }
+
+//    fun goToLogin() {
+//        val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+//        editor.remove("authToken")
+//        editor.apply()
+//    }
 }
