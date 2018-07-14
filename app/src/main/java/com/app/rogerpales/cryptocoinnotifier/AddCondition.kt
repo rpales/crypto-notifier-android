@@ -261,7 +261,7 @@ class AddCondition : AppCompatActivity() {
         val type = typeSpinner!!.selectedItem.toString()
         numReadingsInput!!.isEnabled = type.contains("SMA")
         periodSpinner!!.isEnabled = type.contains("SMA") || type.contains("increment")
-        if (type.contains("increment")) { unitsLabel!!.text = "%" }
+        if (type.contains("increment")) { unitsLabel!!.text = "%" } else { unitsLabel!!.text = toInput!!.text.toString() }
     }
 
     private fun changeToCoinCallback() {
