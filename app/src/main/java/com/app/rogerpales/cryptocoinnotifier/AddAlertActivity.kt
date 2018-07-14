@@ -11,6 +11,7 @@ import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
+import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
 import com.google.gson.Gson
 import retrofit2.Call
 import retrofit2.Callback
@@ -140,12 +141,7 @@ class AddAlertActivity : AppCompatActivity() {
     private fun loadPreferences() {
         val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
         authToken = prefs.getString("authToken", null)
-        val currentAlertJSON = prefs.getString("currentAlert", "")
-        try {
-            currentAlert = gson.fromJson<Alert>(currentAlertJSON, Alert::class.java)
-        } catch (t: Throwable) {
-            goToMain()
-        }
+        currentAlert = AppUtils.deserializeAlert(prefs.getString("currentAlert", ""))
     }
 
     private fun goToMain() {

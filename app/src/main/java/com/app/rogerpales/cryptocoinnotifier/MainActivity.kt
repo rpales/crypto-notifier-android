@@ -13,8 +13,10 @@ import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
+import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -38,18 +40,6 @@ class MainActivity : AppCompatActivity() {
 
         val logoutButton = findViewById(R.id.main_logout_button) as Button
         logoutButton.setOnClickListener {
-            currentUser = null
-            userAlerts  = null
-            authToken = null
-            val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-
-            editor.remove("authToken")
-            editor.remove("email")
-            editor.remove("currentUser")
-            editor.remove("userAlerts")
-            editor.remove("currentAlert")
-            editor.apply()
-
             goToLogin()
         }
 
@@ -73,26 +63,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadPreferences() {
-        val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
-        authToken = prefs.getString("authToken", null)
-        val currentUserJSON = prefs.getString("currentUser", null)
-        if (currentUserJSON != null) {
-            try {
-                currentUser = gson.fromJson<User>(currentUserJSON, User::class.java)
-            } catch (t: Throwable) {
-                Log.e("Deserialize userAlerts", "raw JSON: $currentUserJSON")
-            }
-        }
-        currentUser = gson.fromJson<User>(currentUserJSON, User::class.java)
-        val userAlertsJSON = prefs.getString("userAlerts", null)
-        if (userAlertsJSON != null) {
-            try {
-                val listType = object : TypeToken<List<Alert>>() { }.type
-                userAlerts = Gson().fromJson<List<Alert>>(userAlertsJSON, listType)
-            } catch (t: Throwable) {
-                Log.e("Deserialize userAlerts", "raw JSON: $userAlertsJSON")
-            }
-        }
+        val prefs   = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
+        authToken   = prefs.getString("authToken", null)
+        currentUser = AppUtils.deserializeUser(prefs.getString("currentUser", ""))
+        userAlerts  = AppUtils.deserializeAlertsList(prefs.getString("userAlerts", ""))
     }
 
     // -------------- Populate alerts list view --------------
@@ -150,7 +124,11 @@ class MainActivity : AppCompatActivity() {
                 vh = view.tag as ViewHolder
             }
             val alert = alertsArray?.get(position)
-            vh.alertName.text = alert?.name ?: "(no label)"
+            if (alert?.name == null || alert.name == "") {
+                vh.alertName.text = "(no label)"
+            } else {
+                vh.alertName.text = alert.name
+            }
             vh.alertName.setOnClickListener {
                 goToAddAlert(false, alert)
             }
@@ -162,12 +140,15 @@ class MainActivity : AppCompatActivity() {
 
                     override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                         if (!response.isSuccessful()) {
-                            Toast.makeText(this@MainActivity, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
+                            when (response.code()) {
+                                401  -> goToLogin()
+                                else -> showMessage(response.errorBody()?.string())
+                            }
                         }
                     }
 
                     override fun onFailure(call: Call<Alert>, t: Throwable) {
-                        Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
+                        showMessage("network error")
                     }
                 })
             }
@@ -179,12 +160,15 @@ class MainActivity : AppCompatActivity() {
                             vh.hide()
                             view.visibility = View.GONE
                         } else {
-                            Toast.makeText(this@MainActivity, response.errorBody().toString(), Toast.LENGTH_SHORT).show()
+                            when (response.code()) {
+                                401  -> goToLogin()
+                                else -> showMessage(response.errorBody()?.string())
+                            }
                         }
                     }
 
                     override fun onFailure(call: Call<Alert>, t: Throwable) {
-                        Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
+                        showMessage("network error")
                     }
                 })
             }
@@ -217,12 +201,24 @@ class MainActivity : AppCompatActivity() {
     // -------------- go to activities --------------
 
     private fun goToLogin() {
+        currentUser = null
+        userAlerts  = null
+        authToken = null
+
+        val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+        editor.remove("authToken")
+        editor.remove("email")
+        editor.remove("currentUser")
+        editor.remove("userAlerts")
+        editor.remove("currentAlert")
+        editor.apply()
+
         val intent = Intent(this, LoginActivity::class.java)
         startActivity(intent)
     }
 
-    fun goToAddAlert(newAlert: Boolean, alert: Alert?) {
-        var alert : Alert? = alert
+    fun goToAddAlert(newAlert: Boolean, alertParameter: Alert?) {
+        var alert : Alert? = alertParameter
         val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
         val intent = Intent(this, AddAlertActivity::class.java)
         intent.putExtra("NEW_ALERT", newAlert)
@@ -236,18 +232,27 @@ class MainActivity : AppCompatActivity() {
                         prefsEditor.apply()
                         startActivity(intent)
                     } else {
-                        Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
+                        when (response.code()) {
+                            401  -> goToLogin()
+                            else -> showMessage(response.errorBody()?.string())
+                        }
                     }
                 }
 
                 override fun onFailure(call: Call<Alert>, t: Throwable) {
-                    Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
+                    showMessage("network error")
                 }
             })
         } else {
             prefsEditor.putString("currentAlert", alert?.toJson(gson) ?: "")
             prefsEditor.apply()
             startActivity(intent)
+        }
+    }
+
+    fun showMessage(message: String?) {
+        if (message != null) {
+            Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
         }
     }
 }
