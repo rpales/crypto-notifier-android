@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
@@ -39,18 +40,16 @@
             android:id="@+id/alertSwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="10dp"
             android:layout_weight="1"/>
 
         <ImageButton
             android:id="@+id/alertDelete_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_weight="1"
-            app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
-            android:scaleX="0.6"
-            android:scaleY="0.6"
-            android:background="#df6161"/>
+            android:background="@android:color/transparent"
+            app:srcCompat="@drawable/ic_close_red_24dp" />
     </LinearLayout>
 
 </LinearLayout>
