@@ -1,6 +1,7 @@
 package com.app.rogerpales.cryptocoinnotifier
 
 import android.content.Context
+import android.content.Intent
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.*
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition
+import com.app.rogerpales.cryptocoinnotifier.api.model.Deletable
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
@@ -21,7 +23,6 @@ class AddAlertActivity : AppCompatActivity() {
 
     var authToken : String? = null
     var currentAlert : Alert? = null
-    val gson : Gson = Gson()
     val apiClient : ApiClient = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,10 +45,10 @@ class AddAlertActivity : AppCompatActivity() {
         }
     }
 
-    private class ConditionsListAdapter(context: Context, conditionsArray: Array<CryptoCondition>?, addButton: Button): BaseAdapter() {
+    inner class ConditionsListAdapter(context: Context, conditionsArray: List<CryptoCondition>?, addButton: Button): BaseAdapter() {
 
         private val context : Context
-        private val conditionsArray : Array<CryptoCondition>?
+        private val conditionsArray : List<CryptoCondition>?
         private val addButton : Button
 
         init {
@@ -58,8 +59,7 @@ class AddAlertActivity : AppCompatActivity() {
 
         // responsible for how many rows in my list
         override fun getCount(): Int {
-            val arraySize = conditionsArray?.size ?: 0
-            return arraySize + 1
+            return sizeOf(conditionsArray) + 1
         }
 
         //ignore
@@ -73,7 +73,8 @@ class AddAlertActivity : AppCompatActivity() {
         }
 
         override fun getView(position: Int, convertView: View?, viewGroup: ViewGroup?): View {
-            if (conditionsArray?.size ?: 0 == position) {
+            val size = sizeOf(conditionsArray)
+            if (size == position) {
                 return addButton
             } else {
                 val view: View
@@ -123,12 +124,16 @@ class AddAlertActivity : AppCompatActivity() {
             alertName.setText(currentAlert?.name ?: "")
         }
 
+        val alertSwitch = findViewById(R.id.alert_active) as Switch
+        alertSwitch.isChecked = currentAlert?.active ?: true
+
         val listView = findViewById<ListView>(R.id.alert_conditions_list)
 
         val addButton = Button(this)
         addButton.setText("add condition")
         addButton.setOnClickListener {
-            Toast.makeText(this, "add condition tapped", Toast.LENGTH_SHORT).show()
+            goToAddCondition()
+//            Toast.makeText(this, "add condition tapped", Toast.LENGTH_SHORT).show()
         }
 
         listView.adapter = ConditionsListAdapter(this, currentAlert?.conditions, addButton)
@@ -176,18 +181,47 @@ class AddAlertActivity : AppCompatActivity() {
 
                 override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                     if (!response.isSuccessful()) {
-                        Toast.makeText(this@AddAlertActivity, "network error", Toast.LENGTH_SHORT).show()
+                        when (response.code()) {
+                            401  -> {
+                                val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+                                editor.remove("authToken")
+                                editor.apply()
+                                goToMain()
+                            }
+                            else -> showMessage(response.errorBody()?.string())
+                        }
                     }
                     if (goToMain) { goToMain() }
                 }
 
                 override fun onFailure(call: Call<Alert>, t: Throwable) {
-                    Toast.makeText(this@AddAlertActivity, "network error", Toast.LENGTH_SHORT).show()
+                    showMessage("network error")
                     if (goToMain) { goToMain() }
                 }
             })
         } else {
-            Toast.makeText(this@AddAlertActivity, "no current alert?", Toast.LENGTH_SHORT).show()
+            showMessage("error: no current alert")
         }
+    }
+
+    private fun showMessage(message: String?) {
+        if (message != null) {
+            Toast.makeText(this@AddAlertActivity, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun goToAddCondition() {
+        val intent = Intent(this, AddCondition::class.java)
+        startActivity(intent)
+    }
+
+    fun sizeOf(list: List<Deletable>?): Int {
+        var count : Int = 0
+        if (list != null) {
+            for (item: Deletable in list) {
+                if (!item.deleted) { count += 1 }
+            }
+        }
+        return count
     }
 }

@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
+import com.app.rogerpales.cryptocoinnotifier.api.model.Deletable
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
@@ -104,7 +105,7 @@ class MainActivity : AppCompatActivity() {
             this.alertsArray = alertsArray
         }
 
-        override fun getCount(): Int { return alertsArray?.size ?: 0 }
+        override fun getCount(): Int { return sizeOf(alertsArray) }
 
         override fun getItemId(position: Int): Long { return position.toLong() }
 
@@ -254,5 +255,15 @@ class MainActivity : AppCompatActivity() {
         if (message != null) {
             Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    fun sizeOf(list: List<Deletable>?): Int {
+        var count : Int = 0
+        if (list != null) {
+            for (item: Deletable in list) {
+                if (!item.deleted) { count += 1 }
+            }
+        }
+        return count
     }
 }

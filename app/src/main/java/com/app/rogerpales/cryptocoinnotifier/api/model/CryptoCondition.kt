@@ -1,5 +1,6 @@
 package com.app.rogerpales.cryptocoinnotifier.api.model
 
+import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
 import java.util.*
@@ -17,4 +18,10 @@ data class CryptoCondition(
         @SerializedName("created_at") var createdAt: Date?,
         @SerializedName("updated_at") var updatedAt: Date?,
         @SerializedName("alert_id") var alertId: Integer?
-) : Serializable
+) : Serializable, Deletable {
+    @SerializedName("deleted") override var deleted : Boolean = false
+
+    fun toJson(gson: Gson): String? {
+        return gson.toJson(this)
+    }
+}

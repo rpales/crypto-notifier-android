@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName
 import java.io.Serializable
 import java.util.*
 
-data class Alert(
+data class Alert (
         @SerializedName("id") var id: Integer?,
         @SerializedName("active") var active: Boolean?,
         @SerializedName("name") var name: String?,
@@ -14,8 +14,10 @@ data class Alert(
         @SerializedName("created_at") var createdAt: Date?,
         @SerializedName("updated_at") var updatedAt: Date?,
         @SerializedName("user_id") var userId: Integer?,
-        @SerializedName("conditions") var conditions: Array<CryptoCondition>?
-) : Serializable {
+        @SerializedName("conditions") var conditions: List<CryptoCondition>?
+) : Serializable, Deletable {
+    @SerializedName("deleted") override var deleted : Boolean = false
+
     fun toJson(gson: Gson): String? {
         return gson.toJson(this)
     }

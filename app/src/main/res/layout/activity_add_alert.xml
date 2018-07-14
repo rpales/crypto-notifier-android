@@ -57,14 +57,14 @@
             android:hint="label"
             android:inputType="textPersonName"
             android:padding="8dp"
-            android:textSize="14dp"/>
+            android:textSize="18dp"/>
 
         <Switch
             android:id="@+id/alert_active"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="8dp"
-            android:layout_margin="8dp"
+            android:layout_margin="12dp"
             android:text="Active"/>
 
         <LinearLayout

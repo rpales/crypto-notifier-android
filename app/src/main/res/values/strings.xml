@@ -2,4 +2,30 @@
     <string name="app_name">CryptoCoin Notifier</string>
     <string name="SHARED_PREFERENCES">AppPreferences</string>
     <string name="API_BASE_URL">http://206.189.19.242/</string>
+    <string-array name="condition_types">
+        <item>Price above</item>
+        <item>Price below</item>
+        <item>Price increment</item>
+        <item>Volume above</item>
+        <item>Volume below</item>
+        <item>Volume increment</item>
+        <item>SMA above</item>
+        <item>SMA below</item>
+    </string-array>
+    <string-array name="condition_periods">
+        <item>1 min</item>
+        <item>5 min</item>
+        <item>15 min</item>
+        <item>30 min</item>
+        <item>1 hour</item>
+        <item>12 hours</item>
+        <item>24 hours</item>
+    </string-array>
+    <string-array name="alert_repeat">
+        <item>never</item>
+        <item>hourly</item>
+        <item>daily</item>
+        <item>weekly</item>
+        <item>monthly</item>
+    </string-array>
 </resources>
