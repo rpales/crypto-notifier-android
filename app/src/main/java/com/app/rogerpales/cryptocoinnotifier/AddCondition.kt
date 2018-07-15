@@ -192,15 +192,13 @@ class AddCondition : AppCompatActivity() {
                             }
                             else -> {
                                 errorCallaback(response.errorBody()!!.string())
-                                getAlertAndFinish()
                             }
                         }
                     }
                 }
 
                 override fun onFailure(call: Call<CryptoCondition>, t: Throwable?) {
-                    Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
-                    getAlertAndFinish()
+                    showMessage("unknown error")
                 }
             })
         } else {
@@ -218,15 +216,13 @@ class AddCondition : AppCompatActivity() {
                             }
                             else -> {
                                 errorCallaback(response.errorBody()!!.string())
-                                getAlertAndFinish()
                             }
                         }
                     }
                 }
 
                 override fun onFailure(call: Call<CryptoCondition>, t: Throwable?) {
-                    Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
-                    getAlertAndFinish()
+                    showMessage("unknown error")
                 }
             })
         }
@@ -295,8 +291,8 @@ class AddCondition : AppCompatActivity() {
             }
 
             override fun onFailure(call: Call<CoinsContainer>, t: Throwable?) {
-                Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
                 fromInput!!.isEnabled = true
+                showMessage("unkown error")
             }
 
         })
@@ -313,14 +309,14 @@ class AddCondition : AppCompatActivity() {
                     toInput!!.setAdapter(toInputAdapter)
                     toInput!!.isEnabled = true
                 } else {
-                    errorCallaback(response.errorBody()!!.string())
                     toInput!!.isEnabled = true
+                    errorCallaback(response.errorBody()!!.string())
                 }
             }
 
             override fun onFailure(call: Call<CoinsContainer>, t: Throwable?) {
                 toInput!!.isEnabled = true
-                Toast.makeText(this@AddCondition, "network error", Toast.LENGTH_SHORT).show()
+                showMessage("unkown error")
             }
 
         })
