@@ -17,7 +17,6 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import com.google.gson.Gson
-import java.io.Serializable
 
 
 class LoginActivity : AppCompatActivity() {

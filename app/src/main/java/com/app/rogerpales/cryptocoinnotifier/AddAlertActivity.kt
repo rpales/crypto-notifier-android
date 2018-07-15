@@ -89,10 +89,35 @@ class AddAlertActivity : AppCompatActivity() {
                     view = convertView
                     vh = view.tag as ViewHolder
                 }
-
-                vh.conditionDescription.text = "condition id is "+ conditionsArray?.get(position)?.id.toString()
+                val condition = conditionsArray?.get(position)
+                vh.conditionDescription.text = "condition id is "+ condition!!.id.toString()
                 vh.conditionDescription.setOnClickListener {
                     goToAddCondition(conditionsArray?.get(position))
+                }
+                vh.deleteButton.setOnClickListener {
+                    condition.deleted = true
+                    apiClient.deleteCondition(authToken, condition.alertId, condition.id).enqueue(object : Callback<CryptoCondition> {
+                        override fun onResponse(call: Call<CryptoCondition>, response: Response<CryptoCondition>) {
+                            if (response.isSuccessful()) {
+                                vh.hide()
+                                view.visibility = View.GONE
+                            } else {
+                                when (response.code()) {
+                                    401  -> {
+                                        val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
+                                        editor.remove("authToken")
+                                        editor.apply()
+                                        goToMain()
+                                    }
+                                    else -> errorCallaback(response.errorBody()!!.string())
+                                }
+                            }
+                        }
+
+                        override fun onFailure(call: Call<CryptoCondition>, t: Throwable) {
+                            showMessage("network error")
+                        }
+                    })
                 }
 
                 return view
@@ -102,11 +127,16 @@ class AddAlertActivity : AppCompatActivity() {
 
     inner class ViewHolder(view: View?) {
         val conditionDescription: TextView
+        val deleteButton : ImageButton
 
         init {
             this.conditionDescription = view?.findViewById(R.id.conditionDescription) as TextView
+            this.deleteButton = view?.findViewById(R.id.conditionDelete_button) as ImageButton
         }
-
+        fun hide() {
+            this.conditionDescription.visibility = View.GONE
+            this.deleteButton.visibility = View.GONE
+        }
     }
 
 

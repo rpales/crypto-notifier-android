@@ -19,6 +19,14 @@
             android:padding="5dp"
             android:textSize="18sp"
             android:layout_weight="8"
-            android:text="Text for Content" />
+            android:text="Text for Content"
+            android:layout_gravity="center"/>
+        <ImageButton
+            android:id="@+id/conditionDelete_button"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:background="@android:color/transparent"
+            app:srcCompat="@drawable/ic_close_red_24dp" />
     </LinearLayout>
 </LinearLayout>
