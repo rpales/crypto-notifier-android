@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
@@ -136,6 +137,7 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun errorCallaback(rawResponse: String) {
+        Log.d("error response", rawResponse)
         val err = AppUtils.deserializeApiError(rawResponse)
         if (err != null) {
             for(message in err.errorArray){
