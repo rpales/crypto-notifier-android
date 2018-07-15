@@ -1,8 +1,11 @@
 package com.app.rogerpales.cryptocoinnotifier
 
 import android.content.Context
+import android.graphics.Color
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.annotation.ColorInt
+import android.util.Log
 import android.view.View
 import android.widget.*
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
@@ -73,10 +76,9 @@ class AddCondition : AppCompatActivity() {
     var numReadingsInput : EditText? = null
     var unitsLabel : TextView? = null
 
-    var availablefromCoins : List<String>? = null
-    var availableToCoins   : List<String>? = null
+    var availablefromCoins : List<String>? = listOf<String>()
+    var availableToCoins   : List<String>? = listOf<String>()
     var context : Context = this
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -96,13 +98,26 @@ class AddCondition : AppCompatActivity() {
         numReadingsInput = findViewById(R.id.add_conditioin_readings_number) as EditText
         unitsLabel = findViewById(R.id.add_conditioin_unit_label) as TextView
 
-        toInput!!.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onNothingSelected(p0: AdapterView<*>?) {}
-
-            override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-                changeToCoinCallback()
+        fromInput!!.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                if (availablefromCoins!!.contains(fromInput!!.text.toString())) {
+                    updateToCoins()
+                } else {
+                    showMessage("FROM coin not available")
+                }
             }
         }
+
+        toInput!!.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                if (availableToCoins!!.contains(toInput!!.text.toString())) {
+                    updateToCoins()
+                } else {
+                    showMessage("TO coin not available")
+                }
+            }
+        }
+
         typeSpinner!!.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(p0: AdapterView<*>?) {}
 
@@ -308,6 +323,8 @@ class AddCondition : AppCompatActivity() {
                     toInputAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     toInput!!.setAdapter(toInputAdapter)
                     toInput!!.isEnabled = true
+                    Log.d("update to coins", "success")
+                    Log.d("new to coins list", response.body()?.coinsList.toString())
                 } else {
                     toInput!!.isEnabled = true
                     errorCallaback(response.errorBody()!!.string())
