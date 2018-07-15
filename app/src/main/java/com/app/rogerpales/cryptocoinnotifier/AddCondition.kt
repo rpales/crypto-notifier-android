@@ -3,7 +3,6 @@ package com.app.rogerpales.cryptocoinnotifier
 import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.*
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
@@ -191,7 +190,10 @@ class AddCondition : AppCompatActivity() {
                                 editor.apply()
                                 finish()
                             }
-                            else -> getAlertAndFinish()
+                            else -> {
+                                errorCallaback(response.errorBody()!!.string())
+                                getAlertAndFinish()
+                            }
                         }
                     }
                 }
@@ -214,7 +216,10 @@ class AddCondition : AppCompatActivity() {
                                 editor.apply()
                                 finish()
                             }
-                            else -> getAlertAndFinish()
+                            else -> {
+                                errorCallaback(response.errorBody()!!.string())
+                                getAlertAndFinish()
+                            }
                         }
                     }
                 }
@@ -244,7 +249,7 @@ class AddCondition : AppCompatActivity() {
                             finish()
                         }
                         else -> {
-                            Toast.makeText(this@AddCondition, response.errorBody()?.string(), Toast.LENGTH_SHORT).show()
+                            errorCallaback(response.errorBody()!!.string())
                             finish()
                         }
                     }
@@ -284,7 +289,7 @@ class AddCondition : AppCompatActivity() {
                     fromInput!!.setAdapter(fromInputAdapter)
                     fromInput!!.isEnabled = true
                 } else {
-                    Toast.makeText(this@AddCondition, response.errorBody()?.string(), Toast.LENGTH_SHORT).show()
+                    errorCallaback(response.errorBody()!!.string())
                     fromInput!!.isEnabled = true
                 }
             }
@@ -308,8 +313,8 @@ class AddCondition : AppCompatActivity() {
                     toInput!!.setAdapter(toInputAdapter)
                     toInput!!.isEnabled = true
                 } else {
+                    errorCallaback(response.errorBody()!!.string())
                     toInput!!.isEnabled = true
-                    Toast.makeText(this@AddCondition, response.errorBody()?.string(), Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -319,5 +324,20 @@ class AddCondition : AppCompatActivity() {
             }
 
         })
+    }
+
+    private fun errorCallaback(rawResponse: String) {
+        val err = AppUtils.deserializeApiError(rawResponse)
+        if (err != null) {
+            for(message in err.errorArray){
+                showMessage(message)
+            }
+        }
+    }
+
+    private fun showMessage(message: String?) {
+        if (message != null) {
+            Toast.makeText(this@AddCondition, message, Toast.LENGTH_SHORT).show()
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.app.rogerpales.cryptocoinnotifier.lib
 
 import android.util.Log
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
+import com.app.rogerpales.cryptocoinnotifier.api.model.ApiError
 import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.google.gson.Gson
@@ -91,6 +92,22 @@ class AppUtils {
             }
 
             return conditionsList
+        }
+
+        fun deserializeApiError(JSONstring : String, throwError: Boolean = false): ApiError? {
+            var apiError : ApiError? = null
+
+            if (throwError) {
+                apiError = Gson().fromJson<ApiError>(JSONstring, ApiError::class.java)
+            } else {
+                try {
+                    apiError = Gson().fromJson<ApiError>(JSONstring, ApiError::class.java)
+                } catch (t: Throwable) {
+                    Log.e("deserialize error", "string: $JSONstring")
+                }
+            }
+
+            return apiError
         }
     }
 }

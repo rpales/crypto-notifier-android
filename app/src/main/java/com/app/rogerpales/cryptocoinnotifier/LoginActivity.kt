@@ -7,16 +7,16 @@ import android.widget.Button
 import android.widget.TextView
 import android.content.Intent
 import android.widget.Toast
-import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.LoginRequest
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
+import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import com.google.gson.Gson
-
+import java.io.Serializable
 
 
 class LoginActivity : AppCompatActivity() {
@@ -115,8 +115,7 @@ class LoginActivity : AppCompatActivity() {
                 if (response.isSuccessful()) {
                     successCallback(response)
                 } else {
-                    var str = response.errorBody()!!.string()
-                    Toast.makeText(this@LoginActivity, str, Toast.LENGTH_SHORT).show()
+                    errorCallaback(response.errorBody()!!.string())
                 }
             }
 
@@ -127,13 +126,28 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun successCallback(response: Response<User>) {
-        var user : User? = response.body()
+        val user : User? = response.body()
         val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
         prefsEditor.putString("authToken", user?.authenticationToken ?: "")
         prefsEditor.putString("lastEmail", user?.email ?: "")
         prefsEditor.putString("currentUser", user?.toJson(gson) ?: "")
         prefsEditor.apply()
         finish()
+    }
+
+    private fun errorCallaback(rawResponse: String) {
+        val err = AppUtils.deserializeApiError(rawResponse)
+        if (err != null) {
+            for(message in err.errorArray){
+                showMessage(message)
+            }
+        }
+    }
+
+    private fun showMessage(message: String?) {
+        if (message != null) {
+            Toast.makeText(this@LoginActivity, message, Toast.LENGTH_SHORT).show()
+        }
     }
 
 }

@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
                     if (response.isSuccessful()) {
                         userAlerts = response.body()
                     } else {
-                        Toast.makeText(this@MainActivity, "network error", Toast.LENGTH_SHORT).show()
+                        errorCallaback(response.errorBody()!!.string())
                     }
                 }
 
@@ -145,7 +145,7 @@ class MainActivity : AppCompatActivity() {
                         if (!response.isSuccessful()) {
                             when (response.code()) {
                                 401  -> goToLogin()
-                                else -> showMessage(response.errorBody()?.string())
+                                else -> errorCallaback(response.errorBody()!!.string())
                             }
                         }
                     }
@@ -165,7 +165,7 @@ class MainActivity : AppCompatActivity() {
                         } else {
                             when (response.code()) {
                                 401  -> goToLogin()
-                                else -> showMessage(response.errorBody()?.string())
+                                else -> errorCallaback(response.errorBody()!!.string())
                             }
                         }
                     }
@@ -236,7 +236,7 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         when (response.code()) {
                             401  -> goToLogin()
-                            else -> showMessage(response.errorBody()?.string())
+                            else -> errorCallaback(response.errorBody()!!.string())
                         }
                     }
                 }
@@ -266,5 +266,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
         return count
+    }
+
+    private fun errorCallaback(rawResponse: String) {
+        val err = AppUtils.deserializeApiError(rawResponse)
+        if (err != null) {
+            for(message in err.errorArray){
+                showMessage(message)
+            }
+        } else {
+            showMessage(rawResponse)
+        }
     }
 }

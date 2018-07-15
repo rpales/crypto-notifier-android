@@ -162,7 +162,7 @@ class AddAlertActivity : AppCompatActivity() {
                     prefsEditor.apply()
                     finish()
                 } else {
-                    Toast.makeText(this@AddAlertActivity, "network error", Toast.LENGTH_SHORT).show()
+                    errorCallaback(response.errorBody()!!.string())
                     finish()
                 }
             }
@@ -191,7 +191,7 @@ class AddAlertActivity : AppCompatActivity() {
                                 editor.apply()
                                 goToMain()
                             }
-                            else -> showMessage(response.errorBody()?.string())
+                            else -> errorCallaback(response.errorBody()!!.string())
                         }
                     }
                     if (goToMain) { goToMain() }
@@ -234,6 +234,15 @@ class AddAlertActivity : AppCompatActivity() {
             }
         }
         return count
+    }
+
+    private fun errorCallaback(rawResponse: String) {
+        val err = AppUtils.deserializeApiError(rawResponse)
+        if (err != null) {
+            for(message in err.errorArray){
+                showMessage(message)
+            }
+        }
     }
 
 //    fun goToLogin() {
