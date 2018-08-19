@@ -15,6 +15,7 @@ import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
 import com.google.gson.Gson
+import com.onesignal.OneSignal
 import retrofit2.Call
 import retrofit2.Response
 
@@ -82,6 +83,11 @@ class AddCondition : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // OneSignal Initialization
+        OneSignal.startInit(this)
+                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
+                .unsubscribeWhenNotificationsAreDisabled(true)
+                .init()
         setContentView(R.layout.activity_add_condition)
 
         val doneButton = findViewById(R.id.add_condition_done_button) as android.support.design.widget.FloatingActionButton

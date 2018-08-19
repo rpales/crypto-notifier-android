@@ -18,6 +18,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import com.google.gson.Gson
+import com.onesignal.OneSignal
 
 
 class LoginActivity : AppCompatActivity() {
@@ -28,6 +29,11 @@ class LoginActivity : AppCompatActivity() {
         var register = false
 
         super.onCreate(savedInstanceState)
+        // OneSignal Initialization
+        OneSignal.startInit(this)
+                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
+                .unsubscribeWhenNotificationsAreDisabled(true)
+                .init()
         setContentView(R.layout.activity_login)
 
         loadPreferences()
