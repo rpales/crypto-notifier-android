@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.TextView
 import android.content.Intent
 import android.util.Log
+import android.widget.EditText
 import android.widget.Toast
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
@@ -32,8 +33,8 @@ class LoginActivity : AppCompatActivity() {
         loadPreferences()
 
         var submitButton = findViewById(R.id.submit_button) as Button
-        var emailField = findViewById(R.id.email_field) as TextView
-        var passwordField = findViewById(R.id.password_field) as TextView
+        var emailField = findViewById(R.id.email_field) as EditText
+        var passwordField = findViewById(R.id.password_field) as EditText
         var actionSwitcher = findViewById(R.id.action_switcher) as TextView
 
         val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
@@ -65,6 +66,7 @@ class LoginActivity : AppCompatActivity() {
                 createSession(loginRequest, apiClient)
             }
         }
+
     }
 
     override fun onStart() {
