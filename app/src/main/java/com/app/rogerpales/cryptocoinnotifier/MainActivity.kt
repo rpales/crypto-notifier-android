@@ -13,17 +13,18 @@ import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.Deletable
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
+import com.app.rogerpales.cryptocoinnotifier.api.service.LoginRequest
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.onesignal.OneSignal
+import com.onesignal.*
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionObserver {
     var currentUser : User?        = null
     var userAlerts  : List<Alert>? = null
     var authToken   : String?      = null
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity() {
                 .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
                 .unsubscribeWhenNotificationsAreDisabled(true)
                 .init()
+        OneSignal.addSubscriptionObserver(this);
 
         setContentView(R.layout.activity_main)
 
@@ -59,6 +61,47 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
+
+    // ---- OneSignal ------------------------------------------------------------------------------
+    override fun onOSPermissionChanged(stateChanges: OSPermissionStateChanges) {
+        if (stateChanges.from.enabled && !stateChanges.to.enabled) {
+            Toast.makeText(this@MainActivity, "Please enable notifications. Settings > Apps & notifications > Notifications", Toast.LENGTH_LONG).show()
+        }
+
+        Log.i("Debug", "onOSPermissionChanged: $stateChanges")
+    }
+
+    override fun onOSSubscriptionChanged(stateChanges: OSSubscriptionStateChanges) {
+        if (!stateChanges.from.subscribed && stateChanges.to.subscribed) {
+            Toast.makeText(this@MainActivity, "Updating device ID..", Toast.LENGTH_SHORT).show()
+            // get player ID
+            stateChanges.to.userId
+
+            updateDeviceId(stateChanges.to.userId)
+        }
+
+        Log.i("Debug", "onOSPermissionChanged: $stateChanges")
+    }
+
+    private fun updateDeviceId(deviceId: String?) {
+        val apiClient : ApiClient = RetrofitClient.getClient(getString(R.string.API_BASE_URL))!!.create(ApiClient::class.java)
+        val loginRequest = LoginRequest(null, null, deviceId)
+        apiClient.updateMe(authToken, loginRequest).enqueue(object : Callback<User> {
+
+            override fun onResponse(call: Call<User>, response: Response<User>) {
+                if (response.isSuccessful()) {
+                    Toast.makeText(this@MainActivity, "device ID has been updated", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@MainActivity, "unknown error updating device_id", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<User>, t: Throwable) {
+                Toast.makeText(this@MainActivity, "unknown error", Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+    // ---- end of OneSignal -----------------------------------------------------------------------
 
     override fun onStart() {
         super.onStart()

@@ -18,10 +18,14 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import com.google.gson.Gson
+import com.onesignal.*
+import com.onesignal.OSSubscriptionStateChanges
 import com.onesignal.OneSignal
+import com.onesignal.OSPermissionSubscriptionState
 
 
-class LoginActivity : AppCompatActivity() {
+
+class LoginActivity : AppCompatActivity(), OSPermissionObserver {
     val gson : Gson = Gson()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,6 +38,7 @@ class LoginActivity : AppCompatActivity() {
                 .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
                 .unsubscribeWhenNotificationsAreDisabled(true)
                 .init()
+
         setContentView(R.layout.activity_login)
 
         loadPreferences()
@@ -65,7 +70,7 @@ class LoginActivity : AppCompatActivity() {
 
             val loginRequest = LoginRequest(emailField.text.toString(),
                                             passwordField.text.toString(),
-                                            "device")
+                                            getDeviceId())
             if (register) {
                 registerUser(loginRequest, apiClient)
             } else {
@@ -74,6 +79,17 @@ class LoginActivity : AppCompatActivity() {
         }
 
     }
+
+    // ---- OneSignal ------------------------------------------------------------------------------
+    override fun onOSPermissionChanged(stateChanges: OSPermissionStateChanges) {
+        if (stateChanges.from.enabled && !stateChanges.to.enabled) {
+            Toast.makeText(this@LoginActivity, "Please enable notifications. Settings > Apps & notifications > Notifications", Toast.LENGTH_LONG).show()
+        }
+
+        Log.i("Debug", "onOSPermissionChanged: $stateChanges")
+    }
+    // ---- end of OneSignal -----------------------------------------------------------------------
+
 
     override fun onStart() {
         super.onStart()
@@ -157,6 +173,14 @@ class LoginActivity : AppCompatActivity() {
         if (message != null) {
             Toast.makeText(this@LoginActivity, message, Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun getDeviceId(): String? {
+        val status = OneSignal.getPermissionSubscriptionState()
+        if (status.permissionStatus.enabled && status.subscriptionStatus.subscribed) {
+            return status.subscriptionStatus.userId
+        }
+        return null
     }
 
 }

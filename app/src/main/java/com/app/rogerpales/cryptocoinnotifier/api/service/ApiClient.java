@@ -28,6 +28,9 @@ public interface ApiClient {
     @POST("session")
     Call<User> createSession(@Body LoginRequest loginRequest);
 
+    @PUT("me")
+    Call<User> updateMe(@Header("X-Api-Key") String authToken, @Body LoginRequest loginRequest);
+
     // alerts endpoints
 
     @GET("alerts")
