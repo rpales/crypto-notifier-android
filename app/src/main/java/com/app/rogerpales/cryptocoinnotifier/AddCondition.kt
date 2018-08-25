@@ -121,6 +121,9 @@ class AddCondition : AppCompatActivity() {
                 } else {
                     showMessage("TO coin not available")
                 }
+                if (!typeSpinner!!.selectedItem.toString().contains("increment")) {
+                    unitsLabel!!.text = toInput!!.text.toString()
+                }
             }
         }
 
@@ -283,7 +286,11 @@ class AddCondition : AppCompatActivity() {
         val type = typeSpinner!!.selectedItem.toString()
         numReadingsInput!!.isEnabled = type.contains("SMA")
         periodSpinner!!.isEnabled = type.contains("SMA") || type.contains("increment")
-        if (type.contains("increment")) { unitsLabel!!.text = "%" } else { unitsLabel!!.text = toInput!!.text.toString() }
+        if (type.contains("increment")) {
+            unitsLabel!!.text = "%"
+        } else {
+            unitsLabel!!.text = toInput!!.text.toString()
+        }
     }
 
     private fun changeToCoinCallback() {
