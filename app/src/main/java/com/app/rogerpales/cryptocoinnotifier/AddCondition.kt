@@ -19,7 +19,7 @@ import com.onesignal.OneSignal
 import retrofit2.Call
 import retrofit2.Response
 
-class AddCondition : AppCompatActivity() {
+class AddCondition : AppActivity() {
 
     val periodsFromMap : Map<String, Int> = mapOf(
             "none" to 0,
@@ -65,10 +65,8 @@ class AddCondition : AppCompatActivity() {
             "SMA_BELOW" to "SMA below"
     )
 
-    var authToken : String? = null
     var currentCondition : CryptoCondition? = null
     var currentAlert : Alert? = null
-    val apiClient : ApiClient = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
     var fromInput : AutoCompleteTextView? = null
     var toInput : AutoCompleteTextView? = null
     var typeSpinner : Spinner? = null
@@ -83,11 +81,7 @@ class AddCondition : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // OneSignal Initialization
-        OneSignal.startInit(this)
-                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
-                .unsubscribeWhenNotificationsAreDisabled(true)
-                .init()
+
         setContentView(R.layout.activity_add_condition)
 
         val doneButton = findViewById(R.id.add_condition_done_button) as android.support.design.widget.FloatingActionButton
@@ -177,9 +171,8 @@ class AddCondition : AppCompatActivity() {
         updateToCoins()
     }
 
-    private fun loadPreferences() {
-        val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
-        authToken = prefs.getString("authToken", null)
+    override fun loadPreferences() {
+        super.loadPreferences()
         currentCondition = AppUtils.deserializeCondition(prefs.getString("currentCondition", ""))
         currentAlert = AppUtils.deserializeAlert(prefs.getString("currentAlert", ""))
     }
@@ -209,9 +202,8 @@ class AddCondition : AppCompatActivity() {
                     } else {
                         when (response.code()) {
                             401  -> {
-                                val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                                editor.remove("authToken")
-                                editor.apply()
+                                prefsEditor.remove("authToken")
+                                prefsEditor.apply()
                                 finish()
                             }
                             else -> {
@@ -233,9 +225,8 @@ class AddCondition : AppCompatActivity() {
                     } else {
                         when (response.code()) {
                             401  -> {
-                                val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                                editor.remove("authToken")
-                                editor.apply()
+                                prefsEditor.remove("authToken")
+                                prefsEditor.apply()
                                 finish()
                             }
                             else -> {
@@ -256,7 +247,6 @@ class AddCondition : AppCompatActivity() {
         apiClient.getAlert(authToken, currentCondition?.alertId).enqueue(object : retrofit2.Callback<Alert> {
             override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                 if (response.isSuccessful) {
-                    val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
                     prefsEditor.putString("currentAlert", response.body()?.toJson(Gson()) ?: "")
                     prefsEditor.apply()
                     finish()
@@ -305,7 +295,6 @@ class AddCondition : AppCompatActivity() {
             override fun onResponse(call: Call<CoinsContainer>, response: Response<CoinsContainer>) {
                 if (response.isSuccessful) {
                     availablefromCoins = response.body()?.coinsList
-                    val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
                     prefsEditor.putString("availablefromCoins", response.body()?.toJson(Gson()) ?: "")
                     prefsEditor.apply()
                     val fromInputAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, availablefromCoins)
@@ -352,16 +341,7 @@ class AddCondition : AppCompatActivity() {
         })
     }
 
-    private fun errorCallaback(rawResponse: String) {
-        val err = AppUtils.deserializeApiError(rawResponse)
-        if (err != null) {
-            for(message in err.errorArray){
-                showMessage(message)
-            }
-        }
-    }
-
-    private fun showMessage(message: String?) {
+    override fun showMessage(message: String?) {
         if (message != null) {
             Toast.makeText(this@AddCondition, message, Toast.LENGTH_SHORT).show()
         }

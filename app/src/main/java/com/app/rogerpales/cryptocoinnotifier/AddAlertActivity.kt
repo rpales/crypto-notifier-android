@@ -21,19 +21,13 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class AddAlertActivity : AppCompatActivity() {
+class AddAlertActivity : AppActivity() {
 
-    var authToken : String? = null
     var currentAlert : Alert? = null
-    val apiClient : ApiClient = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // OneSignal Initialization
-        OneSignal.startInit(this)
-                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
-                .unsubscribeWhenNotificationsAreDisabled(true)
-                .init()
+
         setContentView(R.layout.activity_add_alert)
 
         val doneButton = findViewById(R.id.add_alert_done_button) as android.support.design.widget.FloatingActionButton
@@ -110,9 +104,8 @@ class AddAlertActivity : AppCompatActivity() {
                             } else {
                                 when (response.code()) {
                                     401  -> {
-                                        val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                                        editor.remove("authToken")
-                                        editor.apply()
+                                        prefsEditor.remove("authToken")
+                                        prefsEditor.apply()
                                         goToMain()
                                     }
                                     else -> errorCallaback(response.errorBody()!!.string())
@@ -182,9 +175,8 @@ class AddAlertActivity : AppCompatActivity() {
         updateCurrentAlert(true)
     }
 
-    private fun loadPreferences() {
-        val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
-        authToken = prefs.getString("authToken", null)
+    override fun loadPreferences() {
+        super.loadPreferences()
         currentAlert = AppUtils.deserializeAlert(prefs.getString("currentAlert", ""))
     }
 
@@ -193,7 +185,6 @@ class AddAlertActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call<String>, response: Response<String>) {
                 if (response.isSuccessful()) {
-                    val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
                     prefsEditor.putString("userAlerts", response.body().toString())
                     prefsEditor.apply()
                     finish()
@@ -222,9 +213,8 @@ class AddAlertActivity : AppCompatActivity() {
                     if (!response.isSuccessful()) {
                         when (response.code()) {
                             401  -> {
-                                val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                                editor.remove("authToken")
-                                editor.apply()
+                                prefsEditor.remove("authToken")
+                                prefsEditor.apply()
                                 goToMain()
                             }
                             else -> errorCallaback(response.errorBody()!!.string())
@@ -243,7 +233,7 @@ class AddAlertActivity : AppCompatActivity() {
         }
     }
 
-    private fun showMessage(message: String?) {
+    override fun showMessage(message: String?) {
         if (message != null) {
             Toast.makeText(this@AddAlertActivity, message, Toast.LENGTH_SHORT).show()
         }
@@ -251,7 +241,6 @@ class AddAlertActivity : AppCompatActivity() {
 
     private fun goToAddCondition(conditionParameter: CryptoCondition?) {
         var condition : CryptoCondition? = conditionParameter
-        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
         val intent = Intent(this, AddCondition::class.java)
         intent.putExtra("NEW_CONDITION", condition == null)
         if (condition == null) {
@@ -261,29 +250,4 @@ class AddAlertActivity : AppCompatActivity() {
         prefsEditor.apply()
         startActivity(intent)
     }
-
-    fun sizeOf(list: List<Deletable>?): Int {
-        var count = 0
-        if (list != null) {
-            for (item: Deletable in list) {
-                if (!item.deleted) { count += 1 }
-            }
-        }
-        return count
-    }
-
-    private fun errorCallaback(rawResponse: String) {
-        val err = AppUtils.deserializeApiError(rawResponse)
-        if (err != null) {
-            for(message in err.errorArray){
-                showMessage(message)
-            }
-        }
-    }
-
-//    fun goToLogin() {
-//        val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-//        editor.remove("authToken")
-//        editor.apply()
-//    }
 }

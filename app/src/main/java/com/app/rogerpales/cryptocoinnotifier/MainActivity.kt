@@ -24,29 +24,16 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionObserver {
-    var currentUser : User?        = null
-    var userAlerts  : List<Alert>? = null
-    var authToken   : String?      = null
-    val gson        : Gson         = Gson()
-    val apiClient   : ApiClient    = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
-
+class MainActivity : AppActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // OneSignal Initialization
-        OneSignal.startInit(this)
-                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
-                .unsubscribeWhenNotificationsAreDisabled(true)
-                .init()
-        OneSignal.addSubscriptionObserver(this);
 
-        setContentView(R.layout.activity_main)
-
-
+        // allow exit app (back button LoginActivity)
         if (intent.getBooleanExtra("EXIT", false)) {
             finish()
         }
 
+        setContentView(R.layout.activity_main)
 
         val logoutButton = findViewById(R.id.main_logout_button) as Button
         var logoutText = "Logout"
@@ -62,64 +49,10 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
 
     }
 
-    // ---- OneSignal ------------------------------------------------------------------------------
-    override fun onOSPermissionChanged(stateChanges: OSPermissionStateChanges) {
-        if (stateChanges.from.enabled && !stateChanges.to.enabled) {
-            Toast.makeText(this@MainActivity, "Please enable notifications. Settings > Apps & notifications > Notifications", Toast.LENGTH_LONG).show()
-        }
-
-        Log.i("Debug", "onOSPermissionChanged: $stateChanges")
-    }
-
-    override fun onOSSubscriptionChanged(stateChanges: OSSubscriptionStateChanges) {
-        if (!stateChanges.from.subscribed && stateChanges.to.subscribed) {
-            Toast.makeText(this@MainActivity, "Updating device ID..", Toast.LENGTH_SHORT).show()
-            // get player ID
-            stateChanges.to.userId
-
-            updateDeviceId(stateChanges.to.userId)
-        }
-
-        Log.i("Debug", "onOSPermissionChanged: $stateChanges")
-    }
-
-    private fun updateDeviceId(deviceId: String?) {
-        val apiClient : ApiClient = RetrofitClient.getClient(getString(R.string.API_BASE_URL))!!.create(ApiClient::class.java)
-        val loginRequest = LoginRequest(null, null, deviceId)
-        apiClient.updateMe(authToken, loginRequest).enqueue(object : Callback<User> {
-
-            override fun onResponse(call: Call<User>, response: Response<User>) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(this@MainActivity, "device ID has been updated", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this@MainActivity, "unknown error updating device_id", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onFailure(call: Call<User>, t: Throwable) {
-                Toast.makeText(this@MainActivity, "unknown error", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-    // ---- end of OneSignal -----------------------------------------------------------------------
-
     override fun onStart() {
         super.onStart()
-        loadPreferences()
-        if (authToken == null || authToken == "") {
-            goToLogin()
-        }
-
-        if (userAlerts == null) { userAlerts = currentUser?.alerts }
 
         populateAlertsList(false)
-    }
-
-    private fun loadPreferences() {
-        val prefs   = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
-        authToken   = prefs.getString("authToken", null)
-        currentUser = AppUtils.deserializeUser(prefs.getString("currentUser", ""))
-        userAlerts  = AppUtils.deserializeAlertsList(prefs.getString("userAlerts", ""))
     }
 
     // -------------- Populate alerts list view --------------
@@ -253,25 +186,8 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
 
     // -------------- go to activities --------------
 
-    private fun goToLogin() {
-        currentUser = null
-        userAlerts  = null
-        authToken = null
-
-        val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-        editor.remove("authToken")
-        editor.remove("currentUser")
-        editor.remove("userAlerts")
-        editor.remove("currentAlert")
-        editor.apply()
-
-        val intent = Intent(this, LoginActivity::class.java)
-        startActivity(intent)
-    }
-
     fun goToAddAlert(newAlert: Boolean, alertParameter: Alert?) {
         var alert : Alert? = alertParameter
-        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
         val intent = Intent(this, AddAlertActivity::class.java)
         intent.putExtra("NEW_ALERT", newAlert)
         if (newAlert) {
@@ -302,30 +218,9 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
         }
     }
 
-    fun showMessage(message: String?) {
+    override fun showMessage(message: String?) {
         if (message != null) {
             Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun sizeOf(list: List<Deletable>?): Int {
-        var count : Int = 0
-        if (list != null) {
-            for (item: Deletable in list) {
-                if (!item.deleted) { count += 1 }
-            }
-        }
-        return count
-    }
-
-    private fun errorCallaback(rawResponse: String) {
-        val err = AppUtils.deserializeApiError(rawResponse)
-        if (err != null) {
-            for(message in err.errorArray){
-                showMessage(message)
-            }
-        } else {
-            showMessage(rawResponse)
         }
     }
 }
