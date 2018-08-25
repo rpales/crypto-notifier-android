@@ -36,7 +36,7 @@ abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscr
                 .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
                 .unsubscribeWhenNotificationsAreDisabled(true)
                 .init()
-        OneSignal.addSubscriptionObserver(this)
+//        OneSignal.addSubscriptionObserver(this)
         prefs = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         prefsEditor = prefs!!.edit()
     }

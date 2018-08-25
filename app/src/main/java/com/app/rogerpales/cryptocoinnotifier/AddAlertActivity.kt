@@ -89,7 +89,7 @@ class AddAlertActivity : AppActivity() {
                     view = convertView
                     vh = view.tag as ViewHolder
                 }
-                val condition = conditionsArray?.get(position)
+                var condition = conditionsArray?.get(position)
                 vh.conditionDescription.text = "condition id is "+ condition!!.id.toString()
                 vh.conditionDescription.setOnClickListener {
                     goToAddCondition(conditionsArray?.get(position))
@@ -99,8 +99,7 @@ class AddAlertActivity : AppActivity() {
                     apiClient.deleteCondition(authToken, condition.alertId, condition.id).enqueue(object : Callback<CryptoCondition> {
                         override fun onResponse(call: Call<CryptoCondition>, response: Response<CryptoCondition>) {
                             if (response.isSuccessful()) {
-                                vh.hide()
-                                view.visibility = View.GONE
+                                populateConditionsList()
                             } else {
                                 when (response.code()) {
                                     401  -> {
@@ -160,6 +159,11 @@ class AddAlertActivity : AppActivity() {
         val alertSwitch = findViewById(R.id.alert_active) as Switch
         alertSwitch.isChecked = currentAlert?.active ?: true
 
+        populateConditionsList()
+    }
+
+    private fun populateConditionsList() {
+        Log.d("populate list", "populating list...")
         val listView = findViewById<ListView>(R.id.alert_conditions_list)
 
         val addButton = Button(this)
@@ -167,8 +171,8 @@ class AddAlertActivity : AppActivity() {
         addButton.setOnClickListener {
             goToAddCondition( null)
         }
-
-        listView.adapter = ConditionsListAdapter(this, currentAlert?.conditions, addButton)
+        val list = currentAlert?.getConditions()
+        listView.adapter = ConditionsListAdapter(this, list, addButton)
     }
 
     override fun onBackPressed() {

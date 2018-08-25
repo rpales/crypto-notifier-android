@@ -253,9 +253,8 @@ class AddCondition : AppActivity() {
                 } else {
                     when (response.code()) {
                         401  -> {
-                            val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                            editor.remove("authToken")
-                            editor.apply()
+                            prefsEditor!!.remove("authToken")
+                            prefsEditor!!.apply()
                             finish()
                         }
                         else -> {

@@ -1,5 +1,6 @@
 package com.app.rogerpales.cryptocoinnotifier.api.model
 
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
@@ -20,5 +21,19 @@ data class Alert (
 
     fun toJson(gson: Gson): String? {
         return gson.toJson(this)
+    }
+
+    fun getConditions(includeDeleted: Boolean = false) : List<CryptoCondition> {
+        if (conditions != null) {
+            for (condition: CryptoCondition in conditions!!) {
+            }
+            var conditionsList : MutableList<CryptoCondition> = conditions!!.toMutableList()
+            if (includeDeleted) {
+                return conditions!!
+            }
+            return conditionsList.filter { !it.deleted }.toList()
+        } else {
+            return listOf()
+        }
     }
 }
