@@ -196,8 +196,8 @@ class MainActivity : AppActivity() {
                 override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                     if (response.isSuccessful()) {
                         alert = response.body()
-                        prefsEditor.putString("currentAlert", alert?.toJson(gson) ?: "")
-                        prefsEditor.apply()
+                        prefsEditor!!.putString("currentAlert", alert?.toJson(gson) ?: "")
+                        prefsEditor!!.apply()
                         startActivity(intent)
                     } else {
                         when (response.code()) {
@@ -212,8 +212,8 @@ class MainActivity : AppActivity() {
                 }
             })
         } else {
-            prefsEditor.putString("currentAlert", alert?.toJson(gson) ?: "")
-            prefsEditor.apply()
+            prefsEditor!!.putString("currentAlert", alert?.toJson(gson) ?: "")
+            prefsEditor!!.apply()
             startActivity(intent)
         }
     }

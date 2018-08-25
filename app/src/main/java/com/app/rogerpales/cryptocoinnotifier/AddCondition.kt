@@ -173,8 +173,8 @@ class AddCondition : AppActivity() {
 
     override fun loadPreferences() {
         super.loadPreferences()
-        currentCondition = AppUtils.deserializeCondition(prefs.getString("currentCondition", ""))
-        currentAlert = AppUtils.deserializeAlert(prefs.getString("currentAlert", ""))
+        currentCondition = AppUtils.deserializeCondition(prefs!!.getString("currentCondition", ""))
+        currentAlert = AppUtils.deserializeAlert(prefs!!.getString("currentAlert", ""))
     }
 
     private fun saveAndFinish() {
@@ -202,8 +202,8 @@ class AddCondition : AppActivity() {
                     } else {
                         when (response.code()) {
                             401  -> {
-                                prefsEditor.remove("authToken")
-                                prefsEditor.apply()
+                                prefsEditor!!.remove("authToken")
+                                prefsEditor!!.apply()
                                 finish()
                             }
                             else -> {
@@ -225,8 +225,8 @@ class AddCondition : AppActivity() {
                     } else {
                         when (response.code()) {
                             401  -> {
-                                prefsEditor.remove("authToken")
-                                prefsEditor.apply()
+                                prefsEditor!!.remove("authToken")
+                                prefsEditor!!.apply()
                                 finish()
                             }
                             else -> {
@@ -247,8 +247,8 @@ class AddCondition : AppActivity() {
         apiClient.getAlert(authToken, currentCondition?.alertId).enqueue(object : retrofit2.Callback<Alert> {
             override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                 if (response.isSuccessful) {
-                    prefsEditor.putString("currentAlert", response.body()?.toJson(Gson()) ?: "")
-                    prefsEditor.apply()
+                    prefsEditor!!.putString("currentAlert", response.body()?.toJson(Gson()) ?: "")
+                    prefsEditor!!.apply()
                     finish()
                 } else {
                     when (response.code()) {
@@ -295,8 +295,8 @@ class AddCondition : AppActivity() {
             override fun onResponse(call: Call<CoinsContainer>, response: Response<CoinsContainer>) {
                 if (response.isSuccessful) {
                     availablefromCoins = response.body()?.coinsList
-                    prefsEditor.putString("availablefromCoins", response.body()?.toJson(Gson()) ?: "")
-                    prefsEditor.apply()
+                    prefsEditor!!.putString("availablefromCoins", response.body()?.toJson(Gson()) ?: "")
+                    prefsEditor!!.apply()
                     val fromInputAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, availablefromCoins)
                     fromInputAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     fromInput!!.setAdapter(fromInputAdapter)

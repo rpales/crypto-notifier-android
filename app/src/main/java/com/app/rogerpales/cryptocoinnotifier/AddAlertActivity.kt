@@ -104,8 +104,8 @@ class AddAlertActivity : AppActivity() {
                             } else {
                                 when (response.code()) {
                                     401  -> {
-                                        prefsEditor.remove("authToken")
-                                        prefsEditor.apply()
+                                        prefsEditor!!.remove("authToken")
+                                        prefsEditor!!.apply()
                                         goToMain()
                                     }
                                     else -> errorCallaback(response.errorBody()!!.string())
@@ -177,7 +177,7 @@ class AddAlertActivity : AppActivity() {
 
     override fun loadPreferences() {
         super.loadPreferences()
-        currentAlert = AppUtils.deserializeAlert(prefs.getString("currentAlert", ""))
+        currentAlert = AppUtils.deserializeAlert(prefs!!.getString("currentAlert", ""))
     }
 
     private fun goToMain() {
@@ -185,8 +185,8 @@ class AddAlertActivity : AppActivity() {
 
             override fun onResponse(call: Call<String>, response: Response<String>) {
                 if (response.isSuccessful()) {
-                    prefsEditor.putString("userAlerts", response.body().toString())
-                    prefsEditor.apply()
+                    prefsEditor!!.putString("userAlerts", response.body().toString())
+                    prefsEditor!!.apply()
                     finish()
                 } else {
                     errorCallaback(response.errorBody()!!.string())
@@ -213,8 +213,8 @@ class AddAlertActivity : AppActivity() {
                     if (!response.isSuccessful()) {
                         when (response.code()) {
                             401  -> {
-                                prefsEditor.remove("authToken")
-                                prefsEditor.apply()
+                                prefsEditor!!.remove("authToken")
+                                prefsEditor!!.apply()
                                 goToMain()
                             }
                             else -> errorCallaback(response.errorBody()!!.string())
@@ -246,8 +246,8 @@ class AddAlertActivity : AppActivity() {
         if (condition == null) {
             condition = CryptoCondition(alertId = currentAlert?.id!!)
         }
-        prefsEditor.putString("currentCondition", condition?.toJson(Gson()) ?: "")
-        prefsEditor.apply()
+        prefsEditor!!.putString("currentCondition", condition?.toJson(Gson()) ?: "")
+        prefsEditor!!.apply()
         startActivity(intent)
     }
 }

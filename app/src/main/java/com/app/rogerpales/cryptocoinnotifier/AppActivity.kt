@@ -21,13 +21,13 @@ import retrofit2.Callback
 import retrofit2.Response
 
 abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionObserver {
-    var currentUser : User?                    = null
-    var userAlerts  : List<Alert>?             = null
-    var authToken   : String?                  = null
-    val gson        : Gson                     = Gson()
-    val apiClient   : ApiClient                = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
-    val prefs       : SharedPreferences        = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
-    val prefsEditor : SharedPreferences.Editor = prefs.edit()
+    var currentUser : User?                     = null
+    var userAlerts  : List<Alert>?              = null
+    var authToken   : String?                   = null
+    val gson        : Gson                      = Gson()
+    val apiClient   : ApiClient                 = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
+    var prefs       : SharedPreferences?        = null
+    var prefsEditor : SharedPreferences.Editor? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +36,9 @@ abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscr
                 .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
                 .unsubscribeWhenNotificationsAreDisabled(true)
                 .init()
-        OneSignal.addSubscriptionObserver(this);
+        OneSignal.addSubscriptionObserver(this)
+        prefs = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
+        prefsEditor = prefs!!.edit()
     }
 
     // ---- OneSignal ------------------------------------------------------------------------------
@@ -91,9 +93,9 @@ abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscr
     }
 
     open fun loadPreferences() {
-        authToken   = prefs.getString("authToken", null)
-        currentUser = AppUtils.deserializeUser(prefs.getString("currentUser", ""))
-        userAlerts  = AppUtils.deserializeAlertsList(prefs.getString("userAlerts", ""))
+        authToken   = prefs!!.getString("authToken", null)
+        currentUser = AppUtils.deserializeUser(prefs!!.getString("currentUser", ""))
+        userAlerts  = AppUtils.deserializeAlertsList(prefs!!.getString("userAlerts", ""))
     }
 
     // -------------- go to activities --------------
@@ -103,11 +105,11 @@ abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscr
         userAlerts  = null
         authToken = null
 
-        prefsEditor.remove("authToken")
-        prefsEditor.remove("currentUser")
-        prefsEditor.remove("userAlerts")
-        prefsEditor.remove("currentAlert")
-        prefsEditor.apply()
+        prefsEditor!!.remove("authToken")
+        prefsEditor!!.remove("currentUser")
+        prefsEditor!!.remove("userAlerts")
+        prefsEditor!!.remove("currentAlert")
+        prefsEditor!!.apply()
 
         val intent = Intent(this, LoginActivity::class.java)
         startActivity(intent)
