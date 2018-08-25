@@ -11,6 +11,7 @@ import android.widget.*
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.CoinsContainer
 import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition
+import com.app.rogerpales.cryptocoinnotifier.api.model.CurrentData
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
@@ -75,6 +76,11 @@ class AddCondition : AppActivity() {
     var numReadingsInput : EditText? = null
     var unitsLabel : TextView? = null
 
+    // keep track if inputs change
+    var previousFromInput : String? = null
+    var previousToInput : String? = null
+    var previousType : String? = null
+
     var availablefromCoins : List<String>? = listOf<String>()
     var availableToCoins   : List<String>? = listOf<String>()
     var context : Context = this
@@ -100,8 +106,13 @@ class AddCondition : AppActivity() {
 
         fromInput!!.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
-                if (availablefromCoins!!.contains(fromInput!!.text.toString())) {
+                if (availablefromCoins!!.contains(fromInput!!.text.toString().toUpperCase())) {
+                    fromInput!!.setText(fromInput!!.text.toString().toUpperCase())
                     updateToCoins()
+                    if (fromInput!!.text.toString() != previousFromInput) {
+                        fillValueInput()
+                        previousFromInput = fromInput!!.text.toString()
+                    }
                 } else {
                     showMessage("FROM coin not available")
                 }
@@ -110,14 +121,20 @@ class AddCondition : AppActivity() {
 
         toInput!!.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
-                if (availableToCoins!!.contains(toInput!!.text.toString())) {
+                if (availableToCoins!!.contains(toInput!!.text.toString().toUpperCase())) {
+                    toInput!!.setText(toInput!!.text.toString().toUpperCase())
                     updateToCoins()
+                    if (toInput!!.text.toString() != previousToInput) {
+                        fillValueInput()
+                        previousToInput = toInput!!.text.toString()
+                    }
                 } else {
                     showMessage("TO coin not available")
                 }
                 if (!typeSpinner!!.selectedItem.toString().contains("increment")) {
                     unitsLabel!!.text = toInput!!.text.toString()
                 }
+
             }
         }
 
@@ -169,6 +186,7 @@ class AddCondition : AppActivity() {
 
         updateFromCoins()
         updateToCoins()
+        fillValueInput()
     }
 
     override fun loadPreferences() {
@@ -280,6 +298,10 @@ class AddCondition : AppActivity() {
         } else {
             unitsLabel!!.text = toInput!!.text.toString()
         }
+        if (previousType != typeSpinner!!.selectedItem.toString()) {
+            fillValueInput()
+            previousType = typeSpinner!!.selectedItem.toString()
+        }
     }
 
     private fun changeToCoinCallback() {
@@ -336,8 +358,37 @@ class AddCondition : AppActivity() {
                 toInput!!.isEnabled = true
                 showMessage("unkown error")
             }
-
         })
+    }
+
+    fun fillValueInput() {
+        if (!typeSpinner!!.selectedItem.toString().toLowerCase().contains("increment")) {
+            valueInput!!.isEnabled = false
+            apiClient.getCurrentData(authToken, fromInput!!.text.toString(), toInput!!.text.toString()).enqueue(object : retrofit2.Callback<CurrentData> {
+                override fun onResponse(call: Call<CurrentData>, response: Response<CurrentData>) {
+                    if (response.isSuccessful) {
+                        if (typeSpinner!!.selectedItem.toString().toLowerCase().contains("volume")) {
+                            valueInput!!.setText(response.body()?.volume.toString())
+                        } else {
+                            valueInput!!.setText(response.body()?.price.toString())
+                        }
+                        valueInput!!.isEnabled = true
+                    } else {
+                        valueInput!!.isEnabled = true
+                        errorCallaback(response.errorBody()!!.string())
+                    }
+                }
+
+                override fun onFailure(call: Call<CurrentData>, t: Throwable?) {
+                    valueInput!!.isEnabled = true
+                    showMessage("unkown error")
+                }
+            })
+        } else {
+            if (valueInput!!.text.toString().toFloat() > 1000.00) {
+                valueInput!!.setText("0")
+            }
+        }
     }
 
     override fun showMessage(message: String?) {

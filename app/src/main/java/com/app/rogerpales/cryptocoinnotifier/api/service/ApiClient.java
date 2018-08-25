@@ -79,6 +79,6 @@ public interface ApiClient {
 
     // current data endpoints
     @GET("current_data")
-    Call<CurrentData> getPrice(@Header("X-Api-Key") String authToken, @Query("from_coin") String fromCoin, @Query("to_coin") String toCoin);
+    Call<CurrentData> getCurrentData(@Header("X-Api-Key") String authToken, @Query("from_coin") String fromCoin, @Query("to_coin") String toCoin);
 }
 
