@@ -24,4 +24,20 @@ data class CryptoCondition(
     fun toJson(gson: Gson): String? {
         return gson.toJson(this)
     }
+
+    fun description(): String {
+        val type = when (conditionType) {
+            "PRICE_ABOVE" -> "↑"
+            "PRICE_BELOW" -> "↓"
+            "PRICE_INCREMENT" -> "Δ"
+            "VOLUME24HOUR_ABOVE" -> "v↑"
+            "VOLUME24HOUR_BELOW" -> "v↓"
+            "VOLUME24HOUR_INCREMENT" -> "vΔ"
+            "SMA_ABOVE" -> "sma↑"
+            "SMA_BELOW" -> "sma↓"
+            else -> ""
+        }
+        
+        return "$fromCoin/$toCoin $type ${value.toString()}"
+    }
 }

@@ -90,7 +90,7 @@ class AddAlertActivity : AppActivity() {
                     vh = view.tag as ViewHolder
                 }
                 var condition = conditionsArray?.get(position)
-                vh.conditionDescription.text = "condition id is "+ condition!!.id.toString()
+                vh.conditionDescription.text = condition!!.description()
                 vh.conditionDescription.setOnClickListener {
                     goToAddCondition(conditionsArray?.get(position))
                 }
