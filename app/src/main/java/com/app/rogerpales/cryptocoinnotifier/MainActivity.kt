@@ -127,7 +127,14 @@ class MainActivity : AppActivity() {
             vh.alertName.setOnClickListener {
                 goToAddAlert(false, alert)
             }
-            vh.alertDescription.text = "alert id is "+ alert?.id.toString()
+            if (sizeOf(alert!!.conditions) > 1) {
+                val conditionsCount = sizeOf(alert.conditions).toString()
+                vh.alertDescription.text = "$conditionsCount conditions"
+            } else if (sizeOf(alert!!.conditions) == 1) {
+                vh.alertDescription.text = "condition: ${alert.conditions!!.get(0).description()}"
+            } else {
+                vh.alertDescription.text = "no conditions"
+            }
             vh.alertSwitch.isChecked = alert?.active ?: false
             vh.alertSwitch.setOnClickListener {
                 alert?.active = vh.alertSwitch.isChecked
