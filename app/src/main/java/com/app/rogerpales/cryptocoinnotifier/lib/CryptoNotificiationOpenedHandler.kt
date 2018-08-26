@@ -4,9 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.app.rogerpales.cryptocoinnotifier.AddAlertActivity
-import com.app.rogerpales.cryptocoinnotifier.AppActivity
 import com.app.rogerpales.cryptocoinnotifier.MainActivity
-import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils.Companion.deserializeAlert
 import com.onesignal.OSNotificationAction
 import com.onesignal.OSNotificationOpenResult
 import com.onesignal.OneSignal
@@ -14,10 +12,10 @@ import com.onesignal.OneSignal
 
 internal class CryptoNotificiationOpenedHandler : OneSignal.NotificationOpenedHandler {
 
-    val activity: AppActivity
+    val context: Context
 
-    constructor(activity: AppActivity) {
-        this.activity = activity
+    constructor(context: Context) {
+        this.context = context
     }
 
     // This fires when a notification is opened by tapping on it.
@@ -25,13 +23,13 @@ internal class CryptoNotificiationOpenedHandler : OneSignal.NotificationOpenedHa
         val actionType = result.action.type
         val data = result.notification.payload.additionalData
 
-        var intent = Intent(activity, MainActivity::class.java)
+        var intent = Intent(context, MainActivity::class.java)
 
         if (data != null) {
             val alert = data.optString("alert", null)
             val authToken = data.optString("user_auth_token", null)
             if (alert != null && authToken != null) {
-                intent = Intent(activity, AddAlertActivity::class.java)
+                intent = Intent(context, AddAlertActivity::class.java)
                 intent.putExtra("ALERT_FROM_NOTIFICATION", alert)
                 intent.putExtra("AUTH_TOKEN_FROM_NOTIFICATION", authToken)
                 Log.d("OneSignalExample", "alert set with value: $alert")
@@ -42,7 +40,8 @@ internal class CryptoNotificiationOpenedHandler : OneSignal.NotificationOpenedHa
             Log.d("OneSignalExample", "Button pressed with id: " + result.action.actionID)
         }
 
-        activity.startActivity(intent)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent)
 
         // The following can be used to open an Activity of your choice.
         // Replace - getApplicationContext() - with any Android Context.

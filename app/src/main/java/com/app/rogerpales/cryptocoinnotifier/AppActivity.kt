@@ -21,7 +21,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionObserver {
+abstract class AppActivity : AppCompatActivity() {
     var currentUser : User?                     = null
     var userAlerts  : List<Alert>?              = null
     var authToken   : String?                   = null
@@ -32,60 +32,10 @@ abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscr
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // OneSignal Initialization
-        OneSignal.startInit(this)
-                 .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
-                 .unsubscribeWhenNotificationsAreDisabled(true)
-                 .setNotificationOpenedHandler(CryptoNotificiationOpenedHandler(this))
-                 .init()
-        OneSignal.addSubscriptionObserver(this)
 
         prefs = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         prefsEditor = prefs!!.edit()
     }
-
-    // ---- OneSignal ------------------------------------------------------------------------------
-    override fun onOSPermissionChanged(stateChanges: OSPermissionStateChanges) {
-        if (stateChanges.from.enabled && !stateChanges.to.enabled) {
-            Toast.makeText(this@AppActivity, "Please enable notifications. Settings > Apps & notifications > Notifications", Toast.LENGTH_LONG).show()
-        }
-
-        Log.i("Debug", "onOSPermissionChanged: $stateChanges")
-    }
-
-    override fun onOSSubscriptionChanged(stateChanges: OSSubscriptionStateChanges) {
-        if (!stateChanges.from.subscribed && stateChanges.to.subscribed) {
-            val deviceId = stateChanges.to.userId
-            updateDeviceId(deviceId)
-            Log.d("onOSSubscriptionChanged", "update deviceId: $deviceId")
-        } else if (stateChanges.from.subscribed && !stateChanges.to.subscribed) {
-            updateDeviceId("")
-            Log.d("onOSSubscriptionChanged", "update deviceId: \"\"")
-        } else {
-            Log.d("onOSSubscriptionChanged", "$stateChanges")
-        }
-    }
-
-    private fun updateDeviceId(deviceId: String?) {
-        val apiClient : ApiClient = RetrofitClient.getClient(getString(R.string.API_BASE_URL))!!.create(ApiClient::class.java)
-        val loginRequest = LoginRequest(null, null, deviceId)
-        apiClient.updateMe(authToken, loginRequest).enqueue(object : Callback<User> {
-
-            override fun onResponse(call: Call<User>, response: Response<User>) {
-                if (response.isSuccessful()) {
-                    Log.d("udpateDeviceId", "success, deviceId: $deviceId")
-                } else {
-                    Log.d("udpateDeviceId", "API error: ${response.errorBody()!!.string()}")
-                }
-            }
-
-            override fun onFailure(call: Call<User>, t: Throwable) {
-                Toast.makeText(this@AppActivity, "unknown error", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-
-    // ---- end of OneSignal -----------------------------------------------------------------------
 
     override fun onStart() {
         super.onStart()
