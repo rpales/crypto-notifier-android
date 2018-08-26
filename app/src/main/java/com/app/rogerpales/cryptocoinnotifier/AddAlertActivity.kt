@@ -152,7 +152,11 @@ class AddAlertActivity : AppActivity() {
             activityTitle.setText("New Alert")
         } else {
             if (intent.getStringExtra("ALERT_FROM_NOTIFICATION") != null && intent.getStringExtra("ALERT_FROM_NOTIFICATION") != "") {
-                currentAlert = AppUtils.deserializeAlert(intent.getStringExtra("ALERT_FROM_NOTIFICATION"))
+                if (intent.getStringExtra("AUTH_TOKEN_FROM_NOTIFICATION") != this.authToken) {
+                    goToLogin()
+                } else {
+                    currentAlert = AppUtils.deserializeAlert(intent.getStringExtra("ALERT_FROM_NOTIFICATION"))
+                }
             }
             activityTitle.setText("Edit Alert")
             val alertName = findViewById(R.id.alert_name) as EditText

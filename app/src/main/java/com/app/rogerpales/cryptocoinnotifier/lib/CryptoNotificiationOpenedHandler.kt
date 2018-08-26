@@ -29,15 +29,17 @@ internal class CryptoNotificiationOpenedHandler : OneSignal.NotificationOpenedHa
 
         if (data != null) {
             val alert = data.optString("alert", null)
-            if (alert != null) {
+            val authToken = data.optString("user_auth_token", null)
+            if (alert != null && authToken != null) {
                 intent = Intent(activity, AddAlertActivity::class.java)
-                Log.i("OneSignalExample", "alert set with value: $alert")
-                intent.putExtra("ALERT_FROM_NOTIFICATION", alert);
+                intent.putExtra("ALERT_FROM_NOTIFICATION", alert)
+                intent.putExtra("AUTH_TOKEN_FROM_NOTIFICATION", authToken)
+                Log.d("OneSignalExample", "alert set with value: $alert")
             }
         }
 
         if (actionType == OSNotificationAction.ActionType.ActionTaken) {
-            Log.i("OneSignalExample", "Button pressed with id: " + result.action.actionID)
+            Log.d("OneSignalExample", "Button pressed with id: " + result.action.actionID)
         }
 
         activity.startActivity(intent)
