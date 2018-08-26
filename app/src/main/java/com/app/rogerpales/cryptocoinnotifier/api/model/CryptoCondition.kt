@@ -37,7 +37,7 @@ data class CryptoCondition(
             "SMA_BELOW" -> "sma↓"
             else -> ""
         }
-        
+
         return "$fromCoin/$toCoin $type ${value.toString()}"
     }
 }
