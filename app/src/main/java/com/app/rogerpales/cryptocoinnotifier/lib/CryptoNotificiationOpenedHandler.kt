@@ -29,7 +29,7 @@ internal class CryptoNotificiationOpenedHandler : OneSignal.NotificationOpenedHa
             val alert = data.optString("alert", null)
             val authToken = data.optString("user_auth_token", null)
             if (alert != null && authToken != null) {
-                intent = Intent(context, AddAlertActivity::class.java)
+                intent = Intent(context, MainActivity::class.java)
                 intent.putExtra("ALERT_FROM_NOTIFICATION", alert)
                 intent.putExtra("AUTH_TOKEN_FROM_NOTIFICATION", authToken)
                 Log.d("OneSignalExample", "alert set with value: $alert")

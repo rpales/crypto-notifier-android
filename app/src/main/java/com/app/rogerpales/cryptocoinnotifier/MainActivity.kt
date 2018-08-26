@@ -53,6 +53,15 @@ class MainActivity : AppActivity() {
         super.onStart()
 
         populateAlertsList(false)
+        if (intent.getStringExtra("ALERT_FROM_NOTIFICATION") != null && intent.getStringExtra("ALERT_FROM_NOTIFICATION") != "") {
+            if (intent.getStringExtra("AUTH_TOKEN_FROM_NOTIFICATION") != this.authToken) {
+                goToLogin()
+            } else {
+                val alert = AppUtils.deserializeAlert(intent.getStringExtra("ALERT_FROM_NOTIFICATION"))
+                intent.removeExtra("ALERT_FROM_NOTIFICATION")
+                goToAddAlert(false, alert)
+            }
+        }
     }
 
     // -------------- Populate alerts list view --------------
