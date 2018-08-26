@@ -21,6 +21,7 @@
         <activity android:name=".LoginActivity" />
         <activity android:name=".AddAlertActivity" />
         <activity android:name=".AddCondition"></activity>
+            <meta-data android:name="com.onesignal.NotificationOpened.DEFAULT" android:value="DISABLE" />
     </application>
 
 </manifest>

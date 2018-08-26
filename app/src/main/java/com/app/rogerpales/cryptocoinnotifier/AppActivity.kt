@@ -14,6 +14,7 @@ import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.LoginRequest
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
+import com.app.rogerpales.cryptocoinnotifier.lib.CryptoNotificiationOpenedHandler
 import com.google.gson.Gson
 import com.onesignal.*
 import retrofit2.Call
@@ -33,10 +34,12 @@ abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscr
         super.onCreate(savedInstanceState)
         // OneSignal Initialization
         OneSignal.startInit(this)
-                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
-                .unsubscribeWhenNotificationsAreDisabled(true)
-                .init()
-//        OneSignal.addSubscriptionObserver(this)
+                 .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
+                 .unsubscribeWhenNotificationsAreDisabled(true)
+                 .setNotificationOpenedHandler(CryptoNotificiationOpenedHandler(this))
+                 .init()
+        OneSignal.addSubscriptionObserver(this)
+
         prefs = getSharedPreferences("AppPreferences", Context.MODE_PRIVATE)
         prefsEditor = prefs!!.edit()
     }
@@ -52,14 +55,15 @@ abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscr
 
     override fun onOSSubscriptionChanged(stateChanges: OSSubscriptionStateChanges) {
         if (!stateChanges.from.subscribed && stateChanges.to.subscribed) {
-            Toast.makeText(this@AppActivity, "Updating device ID..", Toast.LENGTH_SHORT).show()
-            // get player ID
-            stateChanges.to.userId
-
-            updateDeviceId(stateChanges.to.userId)
+            val deviceId = stateChanges.to.userId
+            updateDeviceId(deviceId)
+            Log.d("onOSSubscriptionChanged", "update deviceId: $deviceId")
+        } else if (stateChanges.from.subscribed && !stateChanges.to.subscribed) {
+            updateDeviceId("")
+            Log.d("onOSSubscriptionChanged", "update deviceId: \"\"")
+        } else {
+            Log.d("onOSSubscriptionChanged", "$stateChanges")
         }
-
-        Log.i("Debug", "onOSPermissionChanged: $stateChanges")
     }
 
     private fun updateDeviceId(deviceId: String?) {
@@ -69,9 +73,9 @@ abstract class AppActivity : AppCompatActivity(), OSPermissionObserver, OSSubscr
 
             override fun onResponse(call: Call<User>, response: Response<User>) {
                 if (response.isSuccessful()) {
-                    Toast.makeText(this@AppActivity, "device ID has been updated", Toast.LENGTH_SHORT).show()
+                    Log.d("udpateDeviceId", "success, deviceId: $deviceId")
                 } else {
-                    Toast.makeText(this@AppActivity, "unknown error updating device_id", Toast.LENGTH_SHORT).show()
+                    Log.d("udpateDeviceId", "API error: ${response.errorBody()!!.string()}")
                 }
             }
 
