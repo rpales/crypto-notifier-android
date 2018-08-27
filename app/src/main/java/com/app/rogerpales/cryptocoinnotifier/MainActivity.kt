@@ -131,7 +131,7 @@ class MainActivity : AppActivity() {
                 val conditionsCount = sizeOf(alert.conditions).toString()
                 vh.alertDescription.text = "$conditionsCount conditions"
             } else if (sizeOf(alert!!.conditions) == 1) {
-                vh.alertDescription.text = "condition: ${alert.conditions!!.get(0).description()}"
+                vh.alertDescription.text = "${alert.conditions!!.get(0).description()}"
             } else {
                 vh.alertDescription.text = "no conditions"
             }

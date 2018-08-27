@@ -1,5 +1,6 @@
 package com.app.rogerpales.cryptocoinnotifier.api.model
 
+import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
@@ -37,7 +38,14 @@ data class CryptoCondition(
             "SMA_BELOW" -> "sma↓"
             else -> ""
         }
+        var unit = ""
+        if (type.contains("Δ")) { unit = " %" }
+        val displayValue = if (type.contains("Δ")) {
+            AppUtils.floatToDecimalString(value?.times(100)?: 0)
+        } else {
+            AppUtils.floatToDecimalString(value)
+        }
 
-        return "$fromCoin/$toCoin $type ${value.toString()}"
+        return "$fromCoin/$toCoin $type ${displayValue}${unit}"
     }
 }
