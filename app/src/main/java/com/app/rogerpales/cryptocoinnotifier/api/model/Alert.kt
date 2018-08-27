@@ -15,9 +15,9 @@ data class Alert (
         @SerializedName("created_at") var createdAt: Date?,
         @SerializedName("updated_at") var updatedAt: Date?,
         @SerializedName("user_id") var userId: Int?,
-        @SerializedName("conditions") var conditions: List<CryptoCondition>?
+        @SerializedName("conditions") var conditions: List<CryptoCondition>?,
+        @SerializedName("deleted") override var deleted : Boolean = false
 ) : Serializable, Deletable {
-    @SerializedName("deleted") override var deleted : Boolean = false
 
     fun toJson(gson: Gson): String? {
         return gson.toJson(this)

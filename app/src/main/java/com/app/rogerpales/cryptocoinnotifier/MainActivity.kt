@@ -25,6 +25,7 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class MainActivity : AppActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -49,10 +50,8 @@ class MainActivity : AppActivity() {
 
     }
 
-    override fun onStart() {
-        super.onStart()
-
-        populateAlertsList(true)
+    override fun onResume() {
+        super.onResume()
         if (intent.getStringExtra("ALERT_FROM_NOTIFICATION") != null && intent.getStringExtra("ALERT_FROM_NOTIFICATION") != "") {
             if (intent.getStringExtra("AUTH_TOKEN_FROM_NOTIFICATION") != this.authToken) {
                 goToLogin()
@@ -61,6 +60,8 @@ class MainActivity : AppActivity() {
                 intent.removeExtra("ALERT_FROM_NOTIFICATION")
                 goToAddAlert(false, alert)
             }
+        } else {
+            populateAlertsList(true)
         }
     }
 
@@ -68,10 +69,12 @@ class MainActivity : AppActivity() {
 
     private fun populateAlertsList(apiFetch: Boolean) {
         if (apiFetch) {
+            Log.d("Loading","fetching user alerts..")
             apiClient.getAlerts(authToken).enqueue(object : Callback<List<Alert>> {
 
                 override fun onResponse(call: Call<List<Alert>>, response: Response<List<Alert>>) {
                     if (response.isSuccessful()) {
+                        prefsEditor!!.putString("userAlerts", gson.toJson(response.body()))
                         userAlerts = response.body()
                     } else {
                         errorCallaback(response.errorBody()!!.string())
@@ -86,7 +89,13 @@ class MainActivity : AppActivity() {
 
         val listView = findViewById<ListView>(R.id.main_alerts_list)
 
-        listView.adapter = AlertsListAdapter(this, userAlerts)
+        if (sizeOf(userAlerts?.filter { it.deleted == false }) < 1) {
+            listView.visibility = View.GONE
+        } else {
+            listView.visibility = View.VISIBLE
+        }
+
+        listView.adapter = AlertsListAdapter(this, userAlerts?.filter { it.deleted == false } )
     }
 
     inner class AlertsListAdapter(context: Context, alertsArray: List<Alert>?): BaseAdapter() {
@@ -96,7 +105,7 @@ class MainActivity : AppActivity() {
 
         init {
             this.context = context
-            this.alertsArray = alertsArray?.filter { it.deleted == false }
+            this.alertsArray = alertsArray
         }
 
         override fun getCount(): Int { return sizeOf(alertsArray) }
@@ -158,14 +167,17 @@ class MainActivity : AppActivity() {
                 })
             }
             vh.deleteButton.setOnClickListener {
+                setAlertDeleted(alert.id, true)
+                populateAlertsList(false)
+
                 apiClient.deleteAlert(authToken, alert?.id?.toInt()).enqueue(object : Callback<Alert> {
 
                     override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                         if (response.isSuccessful()) {
-                            alert?.deleted = true
-                            vh.hide()
-                            view.visibility = View.GONE
+                            prefsEditor!!.putString("userAlerts", gson.toJson(userAlerts!!) ?: "")
                         } else {
+                            setAlertDeleted(alert.id, false)
+                            prefsEditor!!.putString("userAlerts", gson.toJson(userAlerts!!) ?: "")
                             when (response.code()) {
                                 401  -> goToLogin()
                                 else -> errorCallaback(response.errorBody()!!.string())
@@ -174,6 +186,8 @@ class MainActivity : AppActivity() {
                     }
 
                     override fun onFailure(call: Call<Alert>, t: Throwable) {
+                        setAlertDeleted(alert.id, false)
+                        prefsEditor!!.putString("userAlerts", gson.toJson(userAlerts!!) ?: "")
                         showMessage("network error")
                     }
                 })
@@ -241,6 +255,16 @@ class MainActivity : AppActivity() {
     override fun showMessage(message: String?) {
         if (message != null) {
             Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setAlertDeleted(id: Int?, bool: Boolean) {
+        if (userAlerts != null && id != null) {
+            for (alert in userAlerts!!) {
+                if (alert.id == id) {
+                    alert.deleted = true
+                }
+            }
         }
     }
 }
