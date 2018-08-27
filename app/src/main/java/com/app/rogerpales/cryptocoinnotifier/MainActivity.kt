@@ -135,6 +135,9 @@ class MainActivity : AppActivity() {
             } else {
                 vh.alertDescription.text = "no conditions"
             }
+            vh.alertDescription.setOnClickListener {
+                goToAddAlert(false, alert)
+            }
             vh.alertSwitch.isChecked = alert?.active ?: false
             vh.alertSwitch.setOnClickListener {
                 alert?.active = vh.alertSwitch.isChecked

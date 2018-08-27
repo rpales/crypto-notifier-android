@@ -25,6 +25,24 @@ class AddAlertActivity : AppActivity() {
 
     var currentAlert : Alert? = null
 
+    val repeatToMap : Map<String, String> = mapOf(
+            "one_time" to "never",
+            "hourly" to "hourly",
+            "daily" to "daily",
+            "weekly" to "weekly",
+            "monthly" to "monthly"
+    )
+
+    val repeatFromMap : Map<String, String> = mapOf(
+            "never" to "one_time",
+            "hourly" to "hourly",
+            "daily" to "daily",
+            "weekly" to "weekly",
+            "monthly" to "monthly"
+    )
+
+    var repeatSpinner : Spinner? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -44,6 +62,8 @@ class AddAlertActivity : AppActivity() {
         alertSwitch.setOnClickListener {
             updateCurrentAlert(false)
         }
+
+        repeatSpinner = findViewById(R.id.alert_repeat) as Spinner
     }
 
     inner class ConditionsListAdapter(context: Context, conditionsArray: List<CryptoCondition>?, addButton: Button): BaseAdapter() {
@@ -159,6 +179,13 @@ class AddAlertActivity : AppActivity() {
         val alertSwitch = findViewById(R.id.alert_active) as Switch
         alertSwitch.isChecked = currentAlert?.active ?: true
 
+        val repeatSpinnerAdapter = ArrayAdapter.createFromResource(this, R.array.alert_repeat, android.R.layout.simple_spinner_item)
+        repeatSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        repeatSpinner!!.adapter = repeatSpinnerAdapter
+
+        val repeatFrequency = currentAlert?.frequency ?: "one_time"
+        repeatSpinner!!.setSelection(repeatSpinnerAdapter.getPosition(repeatToMap[repeatFrequency]))
+
         populateConditionsList()
     }
 
@@ -211,6 +238,8 @@ class AddAlertActivity : AppActivity() {
             currentAlert?.name = alertName.text.toString()
             val alertSwitch = findViewById(R.id.alert_active) as Switch
             currentAlert?.active = alertSwitch.isChecked
+            val repeatFrequency = repeatSpinner!!.selectedItem.toString()
+            currentAlert?.frequency = repeatFromMap[repeatFrequency]
             apiClient.updateAlert(authToken, currentAlert?.id?.toInt(), currentAlert).enqueue(object : Callback<Alert> {
 
                 override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
