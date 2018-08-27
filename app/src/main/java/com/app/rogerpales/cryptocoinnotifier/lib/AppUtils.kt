@@ -7,6 +7,7 @@ import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.text.DecimalFormat
 
 class AppUtils {
     companion object {
@@ -108,6 +109,18 @@ class AppUtils {
             }
 
             return apiError
+        }
+
+        fun floatToDecimalString(number: Number?): String {
+            val decimalFormat = DecimalFormat("#,##0.00")
+            return decimalFormat.format(number)
+        }
+
+        fun stringToFloat(number: String?): Float {
+            if (number != null) {
+                return number.replace(",", "").toFloat()
+            }
+            return 0.0f
         }
     }
 }

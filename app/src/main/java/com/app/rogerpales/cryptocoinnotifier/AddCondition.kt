@@ -20,6 +20,7 @@ import com.onesignal.OneSignal
 import org.w3c.dom.Text
 import retrofit2.Call
 import retrofit2.Response
+import kotlin.concurrent.thread
 
 class AddCondition : AppActivity() {
 
@@ -87,10 +88,10 @@ class AddCondition : AppActivity() {
     var context : Context = this
 
     // live data
-    var liveFrom   : TextView? = null
-    var liveTo     : TextView? = null
-    var livePrice  : TextView? = null
-    var liveVolume : TextView? = null
+    var liveFrom        : TextView? = null
+    var liveTo          : TextView? = null
+    var livePrice       : TextView? = null
+    var liveVolume      : TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -214,17 +215,21 @@ class AddCondition : AppActivity() {
         currentCondition?.toCoin = toInput!!.text.toString()
         currentCondition?.conditionType = typeSpinner!!.selectedItem.toString()
         if (currentCondition?.conditionType.toString().contains("increment")) {
-            currentCondition?.value = valueInput!!.text.toString().toFloat()/100
+            currentCondition?.value = AppUtils.stringToFloat(valueInput!!.text.toString())/100
         } else {
-            currentCondition?.value = valueInput!!.text.toString().toFloat()
+            currentCondition?.value = AppUtils.stringToFloat(valueInput!!.text.toString())
         }
         val type = typeSpinner!!.selectedItem.toString()
         currentCondition?.conditionType = typesFromMap[type]
         val period = periodSpinner!!.selectedItem.toString()
-        if ((type.toLowerCase().contains("inc") || type.toLowerCase().contains("sma")) && period.contains("none")) {
-            currentCondition?.periodTime = 60
+        if (periodSpinner!!.isEnabled) {
+            if ((type.toLowerCase().contains("inc") || type.toLowerCase().contains("sma")) && period.contains("none")) {
+                currentCondition?.periodTime = 60
+            } else {
+                currentCondition?.periodTime = periodsFromMap[period]
+            }
         } else {
-            currentCondition?.periodTime = periodsFromMap[period]
+            currentCondition?.periodTime = 0
         }
         if (numReadingsInput!!.text.toString() != "") {
             currentCondition?.readingsNumber = numReadingsInput!!.text.toString().toInt()
@@ -385,19 +390,21 @@ class AddCondition : AppActivity() {
                 if (response.isSuccessful) {
                     if (!typeSpinner!!.selectedItem.toString().toLowerCase().contains("increment")) {
                         if (typeSpinner!!.selectedItem.toString().toLowerCase().contains("volume")) {
-                            valueInput!!.setText(response.body()?.volume.toString())
+                            valueInput!!.setText(AppUtils.floatToDecimalString(response.body()?.volume))
                         } else {
-                            valueInput!!.setText(response.body()?.price.toString())
+                            valueInput!!.setText(AppUtils.floatToDecimalString(response.body()?.price))
                         }
                         valueInput!!.isEnabled = true
                     } else {
-                        if (valueInput!!.text.toString().toFloat() > 1000.00) {
+                        if (AppUtils.stringToFloat(valueInput!!.text.toString()) > 1000.00) {
                             valueInput!!.setText("0")
                         }
                         valueInput!!.isEnabled = true
                     }
-                    livePrice!!.text  = String.format("%.2f", response.body()?.price)
-                    liveVolume!!.text = String.format("%.2f", response.body()?.volume)
+                    liveFrom!!.text   = fromInput!!.text.toString()
+                    liveTo!!.text     = toInput!!.text.toString()
+                    livePrice!!.text  = AppUtils.floatToDecimalString(response.body()?.price)
+                    liveVolume!!.text = AppUtils.floatToDecimalString(response.body()?.volume)
                 } else {
                     valueInput!!.isEnabled = true
                     errorCallaback(response.errorBody()!!.string())
