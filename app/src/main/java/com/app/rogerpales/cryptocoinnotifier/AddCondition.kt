@@ -17,6 +17,7 @@ import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
 import com.google.gson.Gson
 import com.onesignal.OneSignal
+import org.w3c.dom.Text
 import retrofit2.Call
 import retrofit2.Response
 
@@ -85,6 +86,12 @@ class AddCondition : AppActivity() {
     var availableToCoins   : List<String>? = listOf<String>()
     var context : Context = this
 
+    // live data
+    var liveFrom   : TextView? = null
+    var liveTo     : TextView? = null
+    var livePrice  : TextView? = null
+    var liveVolume : TextView? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -103,6 +110,12 @@ class AddCondition : AppActivity() {
         periodSpinner = findViewById(R.id.add_conditioin_period) as Spinner
         numReadingsInput = findViewById(R.id.add_conditioin_readings_number) as EditText
         unitsLabel = findViewById(R.id.add_conditioin_unit_label) as TextView
+
+        // assign live data view inputs
+        liveFrom   = findViewById(R.id.current_data_from_coin) as TextView
+        liveTo     = findViewById(R.id.current_data_to_coin) as TextView
+        livePrice  = findViewById(R.id.current_data_price) as TextView
+        liveVolume = findViewById(R.id.current_data_volume) as TextView
 
         fromInput!!.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
@@ -365,12 +378,12 @@ class AddCondition : AppActivity() {
         })
     }
 
-    fun fillValueInput() {
-        if (!typeSpinner!!.selectedItem.toString().toLowerCase().contains("increment")) {
-            valueInput!!.isEnabled = false
-            apiClient.getCurrentData(authToken, fromInput!!.text.toString(), toInput!!.text.toString()).enqueue(object : retrofit2.Callback<CurrentData> {
-                override fun onResponse(call: Call<CurrentData>, response: Response<CurrentData>) {
-                    if (response.isSuccessful) {
+    private fun fillValueInput() {
+        valueInput!!.isEnabled = false
+        apiClient.getCurrentData(authToken, fromInput!!.text.toString(), toInput!!.text.toString()).enqueue(object : retrofit2.Callback<CurrentData> {
+            override fun onResponse(call: Call<CurrentData>, response: Response<CurrentData>) {
+                if (response.isSuccessful) {
+                    if (!typeSpinner!!.selectedItem.toString().toLowerCase().contains("increment")) {
                         if (typeSpinner!!.selectedItem.toString().toLowerCase().contains("volume")) {
                             valueInput!!.setText(response.body()?.volume.toString())
                         } else {
@@ -378,21 +391,24 @@ class AddCondition : AppActivity() {
                         }
                         valueInput!!.isEnabled = true
                     } else {
+                        if (valueInput!!.text.toString().toFloat() > 1000.00) {
+                            valueInput!!.setText("0")
+                        }
                         valueInput!!.isEnabled = true
-                        errorCallaback(response.errorBody()!!.string())
                     }
-                }
-
-                override fun onFailure(call: Call<CurrentData>, t: Throwable?) {
+                    livePrice!!.text  = String.format("%.2f", response.body()?.price)
+                    liveVolume!!.text = String.format("%.2f", response.body()?.volume)
+                } else {
                     valueInput!!.isEnabled = true
-                    showMessage("unkown error")
+                    errorCallaback(response.errorBody()!!.string())
                 }
-            })
-        } else {
-            if (valueInput!!.text.toString().toFloat() > 1000.00) {
-                valueInput!!.setText("0")
             }
-        }
+
+            override fun onFailure(call: Call<CurrentData>, t: Throwable?) {
+                valueInput!!.isEnabled = true
+                showMessage("unkown error")
+            }
+        })
     }
 
     override fun showMessage(message: String?) {
