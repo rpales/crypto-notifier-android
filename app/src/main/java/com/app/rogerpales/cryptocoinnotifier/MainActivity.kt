@@ -52,7 +52,7 @@ class MainActivity : AppActivity() {
     override fun onStart() {
         super.onStart()
 
-        populateAlertsList(false)
+        populateAlertsList(true)
         if (intent.getStringExtra("ALERT_FROM_NOTIFICATION") != null && intent.getStringExtra("ALERT_FROM_NOTIFICATION") != "") {
             if (intent.getStringExtra("AUTH_TOKEN_FROM_NOTIFICATION") != this.authToken) {
                 goToLogin()
@@ -96,7 +96,7 @@ class MainActivity : AppActivity() {
 
         init {
             this.context = context
-            this.alertsArray = alertsArray
+            this.alertsArray = alertsArray?.filter { it.deleted == false }
         }
 
         override fun getCount(): Int { return sizeOf(alertsArray) }
@@ -159,6 +159,7 @@ class MainActivity : AppActivity() {
 
                     override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                         if (response.isSuccessful()) {
+                            alert?.deleted = true
                             vh.hide()
                             view.visibility = View.GONE
                         } else {

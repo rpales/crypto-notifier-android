@@ -137,7 +137,7 @@
                 android:id="@+id/add_conditioin_value"
                 android:layout_width="0px"
                 android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
+                android:inputType="numberDecimal|numberSigned"
                 android:layout_weight="6"
                 android:layout_gravity="center" />
 

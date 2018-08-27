@@ -208,7 +208,11 @@ class AddCondition : AppActivity() {
         val type = typeSpinner!!.selectedItem.toString()
         currentCondition?.conditionType = typesFromMap[type]
         val period = periodSpinner!!.selectedItem.toString()
-        currentCondition?.periodTime = periodsFromMap[period]
+        if ((type.toLowerCase().contains("inc") || type.toLowerCase().contains("sma")) && period.contains("none")) {
+            currentCondition?.periodTime = 60
+        } else {
+            currentCondition?.periodTime = periodsFromMap[period]
+        }
         if (numReadingsInput!!.text.toString() != "") {
             currentCondition?.readingsNumber = numReadingsInput!!.text.toString().toInt()
         }
