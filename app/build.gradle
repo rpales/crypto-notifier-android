@@ -22,14 +22,14 @@ android {
     compileSdkVersion 26
     defaultConfig {
         applicationId "com.app.rogerpales.cryptocoinnotifier"
-        minSdkVersion 19
-        targetSdkVersion 26
+        minSdkVersion 22
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         manifestPlaceholders = [
-                onesignal_app_id: '7b3fb861-279f-4f9b-974b-d3bbf28aed36',
+                onesignal_app_id               : '7b3fb861-279f-4f9b-974b-d3bbf28aed36',
                 // Project number pulled from dashboard, local value is ignored.
                 onesignal_google_project_number: 'REMOTE'
         ]
@@ -39,6 +39,8 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    productFlavors {
     }
 }
 
