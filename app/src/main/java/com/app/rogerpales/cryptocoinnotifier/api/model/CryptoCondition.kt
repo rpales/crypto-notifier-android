@@ -1,5 +1,6 @@
 package com.app.rogerpales.cryptocoinnotifier.api.model
 
+import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
 import java.io.Serializable
@@ -23,5 +24,28 @@ data class CryptoCondition(
 
     fun toJson(gson: Gson): String? {
         return gson.toJson(this)
+    }
+
+    fun description(): String {
+        val type = when (conditionType) {
+            "PRICE_ABOVE" -> "↑"
+            "PRICE_BELOW" -> "↓"
+            "PRICE_INCREMENT" -> "Δ"
+            "VOLUME24HOUR_ABOVE" -> "v↑"
+            "VOLUME24HOUR_BELOW" -> "v↓"
+            "VOLUME24HOUR_INCREMENT" -> "vΔ"
+            "SMA_ABOVE" -> "sma↑"
+            "SMA_BELOW" -> "sma↓"
+            else -> ""
+        }
+        var unit = ""
+        if (type.contains("Δ")) { unit = " %" }
+        val displayValue = if (type.contains("Δ")) {
+            AppUtils.floatToDecimalString(value?.times(100)?: 0)
+        } else {
+            AppUtils.floatToDecimalString(value)
+        }
+
+        return "$fromCoin/$toCoin $type ${displayValue}${unit}"
     }
 }

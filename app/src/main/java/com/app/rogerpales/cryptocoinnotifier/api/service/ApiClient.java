@@ -4,6 +4,7 @@ package com.app.rogerpales.cryptocoinnotifier.api.service;
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert;
 import com.app.rogerpales.cryptocoinnotifier.api.model.CoinsContainer;
 import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition;
+import com.app.rogerpales.cryptocoinnotifier.api.model.CurrentData;
 import com.app.rogerpales.cryptocoinnotifier.api.model.User;
 
 import java.util.List;
@@ -75,5 +76,9 @@ public interface ApiClient {
 
     @GET("to_coins")
     Call<CoinsContainer> getToCoins(@Header("X-Api-Key") String authToken, @Query("from_coin") String fromCoin);
+
+    // current data endpoints
+    @GET("current_data")
+    Call<CurrentData> getCurrentData(@Header("X-Api-Key") String authToken, @Query("from_coin") String fromCoin, @Query("to_coin") String toCoin);
 }
 

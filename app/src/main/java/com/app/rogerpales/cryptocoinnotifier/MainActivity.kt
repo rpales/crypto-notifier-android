@@ -24,29 +24,17 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionObserver {
-    var currentUser : User?        = null
-    var userAlerts  : List<Alert>? = null
-    var authToken   : String?      = null
-    val gson        : Gson         = Gson()
-    val apiClient   : ApiClient    = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
+class MainActivity : AppActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // OneSignal Initialization
-        OneSignal.startInit(this)
-                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
-                .unsubscribeWhenNotificationsAreDisabled(true)
-                .init()
-        OneSignal.addSubscriptionObserver(this);
 
-        setContentView(R.layout.activity_main)
-
-
+        // allow exit app (back button LoginActivity)
         if (intent.getBooleanExtra("EXIT", false)) {
             finish()
         }
 
+        setContentView(R.layout.activity_main)
 
         val logoutButton = findViewById(R.id.main_logout_button) as Button
         var logoutText = "Logout"
@@ -62,74 +50,31 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
 
     }
 
-    // ---- OneSignal ------------------------------------------------------------------------------
-    override fun onOSPermissionChanged(stateChanges: OSPermissionStateChanges) {
-        if (stateChanges.from.enabled && !stateChanges.to.enabled) {
-            Toast.makeText(this@MainActivity, "Please enable notifications. Settings > Apps & notifications > Notifications", Toast.LENGTH_LONG).show()
-        }
-
-        Log.i("Debug", "onOSPermissionChanged: $stateChanges")
-    }
-
-    override fun onOSSubscriptionChanged(stateChanges: OSSubscriptionStateChanges) {
-        if (!stateChanges.from.subscribed && stateChanges.to.subscribed) {
-            Toast.makeText(this@MainActivity, "Updating device ID..", Toast.LENGTH_SHORT).show()
-            // get player ID
-            stateChanges.to.userId
-
-            updateDeviceId(stateChanges.to.userId)
-        }
-
-        Log.i("Debug", "onOSPermissionChanged: $stateChanges")
-    }
-
-    private fun updateDeviceId(deviceId: String?) {
-        val apiClient : ApiClient = RetrofitClient.getClient(getString(R.string.API_BASE_URL))!!.create(ApiClient::class.java)
-        val loginRequest = LoginRequest(null, null, deviceId)
-        apiClient.updateMe(authToken, loginRequest).enqueue(object : Callback<User> {
-
-            override fun onResponse(call: Call<User>, response: Response<User>) {
-                if (response.isSuccessful()) {
-                    Toast.makeText(this@MainActivity, "device ID has been updated", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this@MainActivity, "unknown error updating device_id", Toast.LENGTH_SHORT).show()
-                }
+    override fun onResume() {
+        super.onResume()
+        if (intent.getStringExtra("ALERT_FROM_NOTIFICATION") != null && intent.getStringExtra("ALERT_FROM_NOTIFICATION") != "") {
+            if (intent.getStringExtra("AUTH_TOKEN_FROM_NOTIFICATION") != this.authToken) {
+                goToLogin()
+            } else {
+                val alert = AppUtils.deserializeAlert(intent.getStringExtra("ALERT_FROM_NOTIFICATION"))
+                intent.removeExtra("ALERT_FROM_NOTIFICATION")
+                goToAddAlert(false, alert)
             }
-
-            override fun onFailure(call: Call<User>, t: Throwable) {
-                Toast.makeText(this@MainActivity, "unknown error", Toast.LENGTH_SHORT).show()
-            }
-        })
-    }
-    // ---- end of OneSignal -----------------------------------------------------------------------
-
-    override fun onStart() {
-        super.onStart()
-        loadPreferences()
-        if (authToken == null || authToken == "") {
-            goToLogin()
+        } else {
+            populateAlertsList(true)
         }
-
-        if (userAlerts == null) { userAlerts = currentUser?.alerts }
-
-        populateAlertsList(false)
-    }
-
-    private fun loadPreferences() {
-        val prefs   = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
-        authToken   = prefs.getString("authToken", null)
-        currentUser = AppUtils.deserializeUser(prefs.getString("currentUser", ""))
-        userAlerts  = AppUtils.deserializeAlertsList(prefs.getString("userAlerts", ""))
     }
 
     // -------------- Populate alerts list view --------------
 
     private fun populateAlertsList(apiFetch: Boolean) {
         if (apiFetch) {
+            Log.d("Loading","fetching user alerts..")
             apiClient.getAlerts(authToken).enqueue(object : Callback<List<Alert>> {
 
                 override fun onResponse(call: Call<List<Alert>>, response: Response<List<Alert>>) {
                     if (response.isSuccessful()) {
+                        prefsEditor!!.putString("userAlerts", gson.toJson(response.body()))
                         userAlerts = response.body()
                     } else {
                         errorCallaback(response.errorBody()!!.string())
@@ -144,7 +89,13 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
 
         val listView = findViewById<ListView>(R.id.main_alerts_list)
 
-        listView.adapter = AlertsListAdapter(this, userAlerts)
+        if (sizeOf(userAlerts?.filter { it.deleted == false }) < 1) {
+            listView.visibility = View.GONE
+        } else {
+            listView.visibility = View.VISIBLE
+        }
+
+        listView.adapter = AlertsListAdapter(this, userAlerts?.filter { it.deleted == false } )
     }
 
     inner class AlertsListAdapter(context: Context, alertsArray: List<Alert>?): BaseAdapter() {
@@ -185,7 +136,17 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
             vh.alertName.setOnClickListener {
                 goToAddAlert(false, alert)
             }
-            vh.alertDescription.text = "alert id is "+ alert?.id.toString()
+            if (sizeOf(alert!!.conditions) > 1) {
+                val conditionsCount = sizeOf(alert.conditions).toString()
+                vh.alertDescription.text = "$conditionsCount conditions"
+            } else if (sizeOf(alert!!.conditions) == 1) {
+                vh.alertDescription.text = "${alert.conditions!!.get(0).description()}"
+            } else {
+                vh.alertDescription.text = "no conditions"
+            }
+            vh.alertDescription.setOnClickListener {
+                goToAddAlert(false, alert)
+            }
             vh.alertSwitch.isChecked = alert?.active ?: false
             vh.alertSwitch.setOnClickListener {
                 alert?.active = vh.alertSwitch.isChecked
@@ -206,13 +167,17 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
                 })
             }
             vh.deleteButton.setOnClickListener {
+                setAlertDeleted(alert.id, true)
+                populateAlertsList(false)
+
                 apiClient.deleteAlert(authToken, alert?.id?.toInt()).enqueue(object : Callback<Alert> {
 
                     override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                         if (response.isSuccessful()) {
-                            vh.hide()
-                            view.visibility = View.GONE
+                            prefsEditor!!.putString("userAlerts", gson.toJson(userAlerts!!) ?: "")
                         } else {
+                            setAlertDeleted(alert.id, false)
+                            prefsEditor!!.putString("userAlerts", gson.toJson(userAlerts!!) ?: "")
                             when (response.code()) {
                                 401  -> goToLogin()
                                 else -> errorCallaback(response.errorBody()!!.string())
@@ -221,6 +186,8 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
                     }
 
                     override fun onFailure(call: Call<Alert>, t: Throwable) {
+                        setAlertDeleted(alert.id, false)
+                        prefsEditor!!.putString("userAlerts", gson.toJson(userAlerts!!) ?: "")
                         showMessage("network error")
                     }
                 })
@@ -253,25 +220,8 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
 
     // -------------- go to activities --------------
 
-    private fun goToLogin() {
-        currentUser = null
-        userAlerts  = null
-        authToken = null
-
-        val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-        editor.remove("authToken")
-        editor.remove("currentUser")
-        editor.remove("userAlerts")
-        editor.remove("currentAlert")
-        editor.apply()
-
-        val intent = Intent(this, LoginActivity::class.java)
-        startActivity(intent)
-    }
-
     fun goToAddAlert(newAlert: Boolean, alertParameter: Alert?) {
         var alert : Alert? = alertParameter
-        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
         val intent = Intent(this, AddAlertActivity::class.java)
         intent.putExtra("NEW_ALERT", newAlert)
         if (newAlert) {
@@ -280,8 +230,8 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
                 override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                     if (response.isSuccessful()) {
                         alert = response.body()
-                        prefsEditor.putString("currentAlert", alert?.toJson(gson) ?: "")
-                        prefsEditor.apply()
+                        prefsEditor!!.putString("currentAlert", alert?.toJson(gson) ?: "")
+                        prefsEditor!!.apply()
                         startActivity(intent)
                     } else {
                         when (response.code()) {
@@ -296,36 +246,25 @@ class MainActivity : AppCompatActivity(), OSPermissionObserver, OSSubscriptionOb
                 }
             })
         } else {
-            prefsEditor.putString("currentAlert", alert?.toJson(gson) ?: "")
-            prefsEditor.apply()
+            prefsEditor!!.putString("currentAlert", alert?.toJson(gson) ?: "")
+            prefsEditor!!.apply()
             startActivity(intent)
         }
     }
 
-    fun showMessage(message: String?) {
+    override fun showMessage(message: String?) {
         if (message != null) {
             Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
         }
     }
 
-    fun sizeOf(list: List<Deletable>?): Int {
-        var count : Int = 0
-        if (list != null) {
-            for (item: Deletable in list) {
-                if (!item.deleted) { count += 1 }
+    private fun setAlertDeleted(id: Int?, bool: Boolean) {
+        if (userAlerts != null && id != null) {
+            for (alert in userAlerts!!) {
+                if (alert.id == id) {
+                    alert.deleted = true
+                }
             }
-        }
-        return count
-    }
-
-    private fun errorCallaback(rawResponse: String) {
-        val err = AppUtils.deserializeApiError(rawResponse)
-        if (err != null) {
-            for(message in err.errorArray){
-                showMessage(message)
-            }
-        } else {
-            showMessage(rawResponse)
         }
     }
 }

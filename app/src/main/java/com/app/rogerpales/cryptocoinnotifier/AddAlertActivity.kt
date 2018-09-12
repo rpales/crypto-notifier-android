@@ -21,19 +21,31 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class AddAlertActivity : AppCompatActivity() {
+class AddAlertActivity : AppActivity() {
 
-    var authToken : String? = null
     var currentAlert : Alert? = null
-    val apiClient : ApiClient = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
+
+    val repeatToMap : Map<String, String> = mapOf(
+            "one_time" to "never",
+            "hourly" to "hourly",
+            "daily" to "daily",
+            "weekly" to "weekly",
+            "monthly" to "monthly"
+    )
+
+    val repeatFromMap : Map<String, String> = mapOf(
+            "never" to "one_time",
+            "hourly" to "hourly",
+            "daily" to "daily",
+            "weekly" to "weekly",
+            "monthly" to "monthly"
+    )
+
+    var repeatSpinner : Spinner? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // OneSignal Initialization
-        OneSignal.startInit(this)
-                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
-                .unsubscribeWhenNotificationsAreDisabled(true)
-                .init()
+
         setContentView(R.layout.activity_add_alert)
 
         val doneButton = findViewById(R.id.add_alert_done_button) as android.support.design.widget.FloatingActionButton
@@ -50,6 +62,8 @@ class AddAlertActivity : AppCompatActivity() {
         alertSwitch.setOnClickListener {
             updateCurrentAlert(false)
         }
+
+        repeatSpinner = findViewById(R.id.alert_repeat) as Spinner
     }
 
     inner class ConditionsListAdapter(context: Context, conditionsArray: List<CryptoCondition>?, addButton: Button): BaseAdapter() {
@@ -95,8 +109,8 @@ class AddAlertActivity : AppCompatActivity() {
                     view = convertView
                     vh = view.tag as ViewHolder
                 }
-                val condition = conditionsArray?.get(position)
-                vh.conditionDescription.text = "condition id is "+ condition!!.id.toString()
+                var condition = conditionsArray?.get(position)
+                vh.conditionDescription.text = condition!!.description()
                 vh.conditionDescription.setOnClickListener {
                     goToAddCondition(conditionsArray?.get(position))
                 }
@@ -105,14 +119,12 @@ class AddAlertActivity : AppCompatActivity() {
                     apiClient.deleteCondition(authToken, condition.alertId, condition.id).enqueue(object : Callback<CryptoCondition> {
                         override fun onResponse(call: Call<CryptoCondition>, response: Response<CryptoCondition>) {
                             if (response.isSuccessful()) {
-                                vh.hide()
-                                view.visibility = View.GONE
+                                populateConditionsList()
                             } else {
                                 when (response.code()) {
                                     401  -> {
-                                        val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                                        editor.remove("authToken")
-                                        editor.apply()
+                                        prefsEditor!!.remove("authToken")
+                                        prefsEditor!!.apply()
                                         goToMain()
                                     }
                                     else -> errorCallaback(response.errorBody()!!.string())
@@ -167,6 +179,18 @@ class AddAlertActivity : AppCompatActivity() {
         val alertSwitch = findViewById(R.id.alert_active) as Switch
         alertSwitch.isChecked = currentAlert?.active ?: true
 
+        val repeatSpinnerAdapter = ArrayAdapter.createFromResource(this, R.array.alert_repeat, android.R.layout.simple_spinner_item)
+        repeatSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        repeatSpinner!!.adapter = repeatSpinnerAdapter
+
+        val repeatFrequency = currentAlert?.frequency ?: "one_time"
+        repeatSpinner!!.setSelection(repeatSpinnerAdapter.getPosition(repeatToMap[repeatFrequency]))
+
+        populateConditionsList()
+    }
+
+    private fun populateConditionsList() {
+        Log.d("populate list", "populating list...")
         val listView = findViewById<ListView>(R.id.alert_conditions_list)
 
         val addButton = Button(this)
@@ -174,18 +198,17 @@ class AddAlertActivity : AppCompatActivity() {
         addButton.setOnClickListener {
             goToAddCondition( null)
         }
-
-        listView.adapter = ConditionsListAdapter(this, currentAlert?.conditions, addButton)
+        val list = currentAlert?.getConditions()
+        listView.adapter = ConditionsListAdapter(this, list, addButton)
     }
 
     override fun onBackPressed() {
         updateCurrentAlert(true)
     }
 
-    private fun loadPreferences() {
-        val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
-        authToken = prefs.getString("authToken", null)
-        currentAlert = AppUtils.deserializeAlert(prefs.getString("currentAlert", ""))
+    override fun loadPreferences() {
+        super.loadPreferences()
+        currentAlert = AppUtils.deserializeAlert(prefs!!.getString("currentAlert", ""))
     }
 
     private fun goToMain() {
@@ -193,9 +216,8 @@ class AddAlertActivity : AppCompatActivity() {
 
             override fun onResponse(call: Call<String>, response: Response<String>) {
                 if (response.isSuccessful()) {
-                    val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                    prefsEditor.putString("userAlerts", response.body().toString())
-                    prefsEditor.apply()
+                    prefsEditor!!.putString("userAlerts", response.body().toString())
+                    prefsEditor!!.apply()
                     finish()
                 } else {
                     errorCallaback(response.errorBody()!!.string())
@@ -216,15 +238,16 @@ class AddAlertActivity : AppCompatActivity() {
             currentAlert?.name = alertName.text.toString()
             val alertSwitch = findViewById(R.id.alert_active) as Switch
             currentAlert?.active = alertSwitch.isChecked
+            val repeatFrequency = repeatSpinner!!.selectedItem.toString()
+            currentAlert?.frequency = repeatFromMap[repeatFrequency]
             apiClient.updateAlert(authToken, currentAlert?.id?.toInt(), currentAlert).enqueue(object : Callback<Alert> {
 
                 override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                     if (!response.isSuccessful()) {
                         when (response.code()) {
                             401  -> {
-                                val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                                editor.remove("authToken")
-                                editor.apply()
+                                prefsEditor!!.remove("authToken")
+                                prefsEditor!!.apply()
                                 goToMain()
                             }
                             else -> errorCallaback(response.errorBody()!!.string())
@@ -243,7 +266,7 @@ class AddAlertActivity : AppCompatActivity() {
         }
     }
 
-    private fun showMessage(message: String?) {
+    override fun showMessage(message: String?) {
         if (message != null) {
             Toast.makeText(this@AddAlertActivity, message, Toast.LENGTH_SHORT).show()
         }
@@ -251,39 +274,13 @@ class AddAlertActivity : AppCompatActivity() {
 
     private fun goToAddCondition(conditionParameter: CryptoCondition?) {
         var condition : CryptoCondition? = conditionParameter
-        val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
         val intent = Intent(this, AddCondition::class.java)
         intent.putExtra("NEW_CONDITION", condition == null)
         if (condition == null) {
             condition = CryptoCondition(alertId = currentAlert?.id!!)
         }
-        prefsEditor.putString("currentCondition", condition?.toJson(Gson()) ?: "")
-        prefsEditor.apply()
+        prefsEditor!!.putString("currentCondition", condition?.toJson(Gson()) ?: "")
+        prefsEditor!!.apply()
         startActivity(intent)
     }
-
-    fun sizeOf(list: List<Deletable>?): Int {
-        var count = 0
-        if (list != null) {
-            for (item: Deletable in list) {
-                if (!item.deleted) { count += 1 }
-            }
-        }
-        return count
-    }
-
-    private fun errorCallaback(rawResponse: String) {
-        val err = AppUtils.deserializeApiError(rawResponse)
-        if (err != null) {
-            for(message in err.errorArray){
-                showMessage(message)
-            }
-        }
-    }
-
-//    fun goToLogin() {
-//        val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-//        editor.remove("authToken")
-//        editor.apply()
-//    }
 }

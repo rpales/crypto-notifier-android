@@ -51,8 +51,8 @@ class LoginActivity : AppCompatActivity(), OSPermissionObserver {
         val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
 
         // remove authToken key (session)
-        prefsEditor.remove("authToken")
-        prefsEditor.apply()
+        prefsEditor!!.remove("authToken")
+        prefsEditor!!.apply()
 
         actionSwitcher.setOnClickListener {
             if (register) {

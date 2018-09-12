@@ -11,15 +11,18 @@ import android.widget.*
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.CoinsContainer
 import com.app.rogerpales.cryptocoinnotifier.api.model.CryptoCondition
+import com.app.rogerpales.cryptocoinnotifier.api.model.CurrentData
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
 import com.google.gson.Gson
 import com.onesignal.OneSignal
+import org.w3c.dom.Text
 import retrofit2.Call
 import retrofit2.Response
+import kotlin.concurrent.thread
 
-class AddCondition : AppCompatActivity() {
+class AddCondition : AppActivity() {
 
     val periodsFromMap : Map<String, Int> = mapOf(
             "none" to 0,
@@ -65,10 +68,8 @@ class AddCondition : AppCompatActivity() {
             "SMA_BELOW" to "SMA below"
     )
 
-    var authToken : String? = null
     var currentCondition : CryptoCondition? = null
     var currentAlert : Alert? = null
-    val apiClient : ApiClient = RetrofitClient.getClient("http://206.189.19.242/")!!.create(ApiClient::class.java)
     var fromInput : AutoCompleteTextView? = null
     var toInput : AutoCompleteTextView? = null
     var typeSpinner : Spinner? = null
@@ -77,17 +78,24 @@ class AddCondition : AppCompatActivity() {
     var numReadingsInput : EditText? = null
     var unitsLabel : TextView? = null
 
+    // keep track if inputs change
+    var previousFromInput : String? = null
+    var previousToInput : String? = null
+    var previousType : String? = null
+
     var availablefromCoins : List<String>? = listOf<String>()
     var availableToCoins   : List<String>? = listOf<String>()
     var context : Context = this
 
+    // live data
+    var liveFrom        : TextView? = null
+    var liveTo          : TextView? = null
+    var livePrice       : TextView? = null
+    var liveVolume      : TextView? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // OneSignal Initialization
-        OneSignal.startInit(this)
-                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
-                .unsubscribeWhenNotificationsAreDisabled(true)
-                .init()
+
         setContentView(R.layout.activity_add_condition)
 
         val doneButton = findViewById(R.id.add_condition_done_button) as android.support.design.widget.FloatingActionButton
@@ -104,10 +112,21 @@ class AddCondition : AppCompatActivity() {
         numReadingsInput = findViewById(R.id.add_conditioin_readings_number) as EditText
         unitsLabel = findViewById(R.id.add_conditioin_unit_label) as TextView
 
+        // assign live data view inputs
+        liveFrom   = findViewById(R.id.current_data_from_coin) as TextView
+        liveTo     = findViewById(R.id.current_data_to_coin) as TextView
+        livePrice  = findViewById(R.id.current_data_price) as TextView
+        liveVolume = findViewById(R.id.current_data_volume) as TextView
+
         fromInput!!.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
-                if (availablefromCoins!!.contains(fromInput!!.text.toString())) {
+                if (availablefromCoins!!.contains(fromInput!!.text.toString().toUpperCase())) {
+                    fromInput!!.setText(fromInput!!.text.toString().toUpperCase())
                     updateToCoins()
+                    if (fromInput!!.text.toString() != previousFromInput) {
+                        fillValueInput()
+                        previousFromInput = fromInput!!.text.toString()
+                    }
                 } else {
                     showMessage("FROM coin not available")
                 }
@@ -116,14 +135,20 @@ class AddCondition : AppCompatActivity() {
 
         toInput!!.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
-                if (availableToCoins!!.contains(toInput!!.text.toString())) {
+                if (availableToCoins!!.contains(toInput!!.text.toString().toUpperCase())) {
+                    toInput!!.setText(toInput!!.text.toString().toUpperCase())
                     updateToCoins()
+                    if (toInput!!.text.toString() != previousToInput) {
+                        fillValueInput()
+                        previousToInput = toInput!!.text.toString()
+                    }
                 } else {
                     showMessage("TO coin not available")
                 }
                 if (!typeSpinner!!.selectedItem.toString().contains("increment")) {
                     unitsLabel!!.text = toInput!!.text.toString()
                 }
+
             }
         }
 
@@ -175,13 +200,13 @@ class AddCondition : AppCompatActivity() {
 
         updateFromCoins()
         updateToCoins()
+        fillValueInput()
     }
 
-    private fun loadPreferences() {
-        val prefs = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE)
-        authToken = prefs.getString("authToken", null)
-        currentCondition = AppUtils.deserializeCondition(prefs.getString("currentCondition", ""))
-        currentAlert = AppUtils.deserializeAlert(prefs.getString("currentAlert", ""))
+    override fun loadPreferences() {
+        super.loadPreferences()
+        currentCondition = AppUtils.deserializeCondition(prefs!!.getString("currentCondition", ""))
+        currentAlert = AppUtils.deserializeAlert(prefs!!.getString("currentAlert", ""))
     }
 
     private fun saveAndFinish() {
@@ -190,14 +215,22 @@ class AddCondition : AppCompatActivity() {
         currentCondition?.toCoin = toInput!!.text.toString()
         currentCondition?.conditionType = typeSpinner!!.selectedItem.toString()
         if (currentCondition?.conditionType.toString().contains("increment")) {
-            currentCondition?.value = valueInput!!.text.toString().toFloat()/100
+            currentCondition?.value = AppUtils.stringToFloat(valueInput!!.text.toString())/100
         } else {
-            currentCondition?.value = valueInput!!.text.toString().toFloat()
+            currentCondition?.value = AppUtils.stringToFloat(valueInput!!.text.toString())
         }
         val type = typeSpinner!!.selectedItem.toString()
         currentCondition?.conditionType = typesFromMap[type]
         val period = periodSpinner!!.selectedItem.toString()
-        currentCondition?.periodTime = periodsFromMap[period]
+        if (periodSpinner!!.isEnabled) {
+            if ((type.toLowerCase().contains("inc") || type.toLowerCase().contains("sma")) && period.contains("none")) {
+                currentCondition?.periodTime = 60
+            } else {
+                currentCondition?.periodTime = periodsFromMap[period]
+            }
+        } else {
+            currentCondition?.periodTime = 0
+        }
         if (numReadingsInput!!.text.toString() != "") {
             currentCondition?.readingsNumber = numReadingsInput!!.text.toString().toInt()
         }
@@ -209,9 +242,8 @@ class AddCondition : AppCompatActivity() {
                     } else {
                         when (response.code()) {
                             401  -> {
-                                val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                                editor.remove("authToken")
-                                editor.apply()
+                                prefsEditor!!.remove("authToken")
+                                prefsEditor!!.apply()
                                 finish()
                             }
                             else -> {
@@ -233,9 +265,8 @@ class AddCondition : AppCompatActivity() {
                     } else {
                         when (response.code()) {
                             401  -> {
-                                val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                                editor.remove("authToken")
-                                editor.apply()
+                                prefsEditor!!.remove("authToken")
+                                prefsEditor!!.apply()
                                 finish()
                             }
                             else -> {
@@ -256,16 +287,14 @@ class AddCondition : AppCompatActivity() {
         apiClient.getAlert(authToken, currentCondition?.alertId).enqueue(object : retrofit2.Callback<Alert> {
             override fun onResponse(call: Call<Alert>, response: Response<Alert>) {
                 if (response.isSuccessful) {
-                    val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                    prefsEditor.putString("currentAlert", response.body()?.toJson(Gson()) ?: "")
-                    prefsEditor.apply()
+                    prefsEditor!!.putString("currentAlert", response.body()?.toJson(Gson()) ?: "")
+                    prefsEditor!!.apply()
                     finish()
                 } else {
                     when (response.code()) {
                         401  -> {
-                            val editor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                            editor.remove("authToken")
-                            editor.apply()
+                            prefsEditor!!.remove("authToken")
+                            prefsEditor!!.apply()
                             finish()
                         }
                         else -> {
@@ -291,6 +320,10 @@ class AddCondition : AppCompatActivity() {
         } else {
             unitsLabel!!.text = toInput!!.text.toString()
         }
+        if (previousType != typeSpinner!!.selectedItem.toString()) {
+            fillValueInput()
+            previousType = typeSpinner!!.selectedItem.toString()
+        }
     }
 
     private fun changeToCoinCallback() {
@@ -305,9 +338,8 @@ class AddCondition : AppCompatActivity() {
             override fun onResponse(call: Call<CoinsContainer>, response: Response<CoinsContainer>) {
                 if (response.isSuccessful) {
                     availablefromCoins = response.body()?.coinsList
-                    val prefsEditor = getSharedPreferences(getString(R.string.SHARED_PREFERENCES), Context.MODE_PRIVATE).edit()
-                    prefsEditor.putString("availablefromCoins", response.body()?.toJson(Gson()) ?: "")
-                    prefsEditor.apply()
+                    prefsEditor!!.putString("availablefromCoins", response.body()?.toJson(Gson()) ?: "")
+                    prefsEditor!!.apply()
                     val fromInputAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, availablefromCoins)
                     fromInputAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     fromInput!!.setAdapter(fromInputAdapter)
@@ -348,20 +380,45 @@ class AddCondition : AppCompatActivity() {
                 toInput!!.isEnabled = true
                 showMessage("unkown error")
             }
-
         })
     }
 
-    private fun errorCallaback(rawResponse: String) {
-        val err = AppUtils.deserializeApiError(rawResponse)
-        if (err != null) {
-            for(message in err.errorArray){
-                showMessage(message)
+    private fun fillValueInput() {
+        valueInput!!.isEnabled = false
+        apiClient.getCurrentData(authToken, fromInput!!.text.toString(), toInput!!.text.toString()).enqueue(object : retrofit2.Callback<CurrentData> {
+            override fun onResponse(call: Call<CurrentData>, response: Response<CurrentData>) {
+                if (response.isSuccessful) {
+                    if (!typeSpinner!!.selectedItem.toString().toLowerCase().contains("increment")) {
+                        if (typeSpinner!!.selectedItem.toString().toLowerCase().contains("volume")) {
+                            valueInput!!.setText(AppUtils.floatToDecimalString(response.body()?.volume))
+                        } else {
+                            valueInput!!.setText(AppUtils.floatToDecimalString(response.body()?.price))
+                        }
+                        valueInput!!.isEnabled = true
+                    } else {
+                        if (AppUtils.stringToFloat(valueInput!!.text.toString()) > 1000.00) {
+                            valueInput!!.setText("0")
+                        }
+                        valueInput!!.isEnabled = true
+                    }
+                    liveFrom!!.text   = fromInput!!.text.toString()
+                    liveTo!!.text     = toInput!!.text.toString()
+                    livePrice!!.text  = AppUtils.floatToDecimalString(response.body()?.price)
+                    liveVolume!!.text = AppUtils.floatToDecimalString(response.body()?.volume)
+                } else {
+                    valueInput!!.isEnabled = true
+                    errorCallaback(response.errorBody()!!.string())
+                }
             }
-        }
+
+            override fun onFailure(call: Call<CurrentData>, t: Throwable?) {
+                valueInput!!.isEnabled = true
+                showMessage("unkown error")
+            }
+        })
     }
 
-    private fun showMessage(message: String?) {
+    override fun showMessage(message: String?) {
         if (message != null) {
             Toast.makeText(this@AddCondition, message, Toast.LENGTH_SHORT).show()
         }
