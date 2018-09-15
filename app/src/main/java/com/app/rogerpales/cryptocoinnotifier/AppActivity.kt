@@ -5,21 +5,13 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import android.widget.*
 import com.app.rogerpales.cryptocoinnotifier.api.model.Alert
 import com.app.rogerpales.cryptocoinnotifier.api.model.Deletable
 import com.app.rogerpales.cryptocoinnotifier.api.model.User
 import com.app.rogerpales.cryptocoinnotifier.api.service.ApiClient
-import com.app.rogerpales.cryptocoinnotifier.api.service.LoginRequest
 import com.app.rogerpales.cryptocoinnotifier.api.service.RetrofitClient
 import com.app.rogerpales.cryptocoinnotifier.lib.AppUtils
-import com.app.rogerpales.cryptocoinnotifier.lib.CryptoNotificiationOpenedHandler
 import com.google.gson.Gson
-import com.onesignal.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 abstract class AppActivity : AppCompatActivity() {
     var currentUser : User?                     = null
